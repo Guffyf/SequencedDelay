@@ -63,6 +63,6 @@ void BasicDelayAudioProcessorEditor::resized()
 
 void BasicDelayAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
-    audioProcessor.delayTime = delayA.getValue();
+    audioProcessor.delayMilliseconds = delayA.getValue();
     audioProcessor.delayFeedback = feedback.getValue();
 }

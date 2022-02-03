@@ -30,9 +30,17 @@ public:
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
-    void fillDelayBuffer(juce::AudioBuffer<float>& buffer, juce::AudioBuffer<float>& delayBuffer, int bufferSize, int delayBufferSize, int channel);
+    /*
+    Loads the delayBuffer with new incoming information
+    */
+    void loadDelayBuffer();
 
-    void readDelayBuffer(juce::AudioBuffer<float>& buffer, juce::AudioBuffer<float>& delayBuffer, int bufferSize, int delayBufferSize, int channel);
+    /*
+    Reads from delayBuffer and copies to wetBuffer
+
+    @param delayTime    f
+    */
+    void writeDelay(float delayTime, float delayGain);
 
 
     //==============================================================================
@@ -59,11 +67,26 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==============================================================================
-    float delayTime{ 100 };
-    float delayFeedback{ 0 };
+    float delayMilliseconds{ 100.0f };
+    float delayFeedback{ 0.0f };
+
+    float blend{ 50.0f };
 private:
+    const float delay_buffer_length = 2.0f;
+
+    //==============================================================================
+    juce::AudioBuffer<float>* mainBuffer;
+    int bufferSize{ 0 };
+
     juce::AudioBuffer<float> delayBuffer;
+    int delayBufferSize{ 0 };
+
+    juce::AudioBuffer<float> wetBuffer;
+
+    int channel{ 0 };
     int writePosition{ 0 };
+
+
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BasicDelayAudioProcessor)
