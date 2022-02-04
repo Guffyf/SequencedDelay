@@ -31,8 +31,8 @@ private:
     // access the processor object that created it.
     BasicDelayAudioProcessor& audioProcessor;
 
-    juce::Slider delayA;
-    juce::Slider feedback;
+    juce::Slider delay[BasicDelayAudioProcessor::num_delays];
+    juce::Slider feedback[BasicDelayAudioProcessor::num_delays];
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BasicDelayAudioProcessorEditor)
 };

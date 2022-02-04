@@ -67,10 +67,12 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==============================================================================
-    float delayMilliseconds{ 100.0f };
-    float delayFeedback{ 0.0f };
+    static constexpr int num_delays = 4;
+    
+    float delayMilliseconds[num_delays]{ 100.0f };
+    float delayFeedback[num_delays]{ 0.0f };
 
-    float blend{ 50.0f };
+    float blend{ 100.0f };
 private:
     const float delay_buffer_length = 2.0f;
 
@@ -85,9 +87,6 @@ private:
 
     int channel{ 0 };
     int writePosition{ 0 };
-
-
-
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BasicDelayAudioProcessor)
 };

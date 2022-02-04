@@ -152,7 +152,10 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     {
         loadDelayBuffer();
 
-        writeDelay(delayMilliseconds, delayFeedback);
+        for (int i = 0; i < num_delays; ++i)
+        {
+            writeDelay(delayMilliseconds[i], (delayFeedback[i] / 100.0f));
+        }
     }
 
     writePosition += bufferSize;
@@ -200,19 +203,17 @@ void BasicDelayAudioProcessor::writeDelay(float delayTime, float delayGain)
         readPosition += delayBufferSize;
     }
 
-    auto g = delayFeedback / 100.0f;
-
     if (readPosition + bufferSize < delayBufferSize)
     {
-        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, g, g);
+        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, delayGain, delayGain);
     }
     else
     {
         int numSamplesToEnd = delayBufferSize - readPosition;
         int numSamplesAtStart = bufferSize - numSamplesToEnd;
 
-        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, g, g);
-        wetBuffer.addFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, g, g);
+        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, delayGain, delayGain);
+        wetBuffer.addFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, delayGain, delayGain);
     }
 }
 
