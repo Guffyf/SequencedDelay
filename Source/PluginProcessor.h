@@ -11,63 +11,30 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-/**
-*/
+
+
+//==============================================================================
 class BasicDelayAudioProcessor  : public juce::AudioProcessor
 {
 public:
     //==============================================================================
-    BasicDelayAudioProcessor()
-        : parameters(*this, nullptr, juce::Identifier("Main"),
-            // https://docs.juce.com/master/tutorial_audio_processor_value_tree_state.html
-            // I cannot believe this
-            {
-                std::make_unique<juce::AudioParameterFloat> ("delay1",
-                                                             "Delay 1",
-                                                             0.0f,
-                                                             2000.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("delay2",
-                                                             "Delay 2",
-                                                             0.0f,
-                                                             2000.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("delay3",
-                                                             "Delay 3",
-                                                             0.0f,
-                                                             2000.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("delay4",
-                                                             "Delay 4",
-                                                             0.0f,
-                                                             2000.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("fdbk1",
-                                                             "Feedback 1",
-                                                             0.0f,
-                                                             100.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("fdbk2",
-                                                             "Feedback 2",
-                                                             0.0f,
-                                                             100.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("fdbk3",
-                                                             "Feedback 3",
-                                                             0.0f,
-                                                             100.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("fdbk4",
-                                                             "Feedback 4",
-                                                             0.0f,
-                                                             100.0f,
-                                                             100.0f),
-                std::make_unique<juce::AudioParameterFloat> ("blend",
-                                                             "Dry/Wet",
-                                                             0.0f,
-                                                             100.0f,
-                                                             100.0f),
-            })
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
+    {
+        juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+        for (int i = 1; i <= num_delays; ++i)
+        {
+            auto numStr = std::to_string(i);
+            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, "Delay " + numStr, 0.0f, 2000.0f, 100.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, "Feedback " + numStr, 0.0f, 100.0f, 100.0f));
+        }
+
+        layout.add(std::make_unique<juce::AudioParameterFloat>("blend", "Dry/Wet", 0.0f, 100.0f, 100.0f));
+
+        return layout;
+    }
+
+    BasicDelayAudioProcessor() : parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
     #ifndef JucePlugin_PreferredChannelConfigurations : AudioProcessor(BusesProperties())
     #endif
     {
@@ -76,6 +43,7 @@ public:
             delay[i] = parameters.getRawParameterValue("delay" + std::to_string(i + 1));
             fdbk[i] = parameters.getRawParameterValue("fdbk" + std::to_string(i + 1));
         }
+
         blend = parameters.getRawParameterValue("blend");
     }
     ~BasicDelayAudioProcessor() override;
@@ -118,7 +86,7 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==============================================================================
-    static constexpr int num_delays = 4;
+    static constexpr int num_delays = 6;
     
     
 private:
@@ -127,7 +95,7 @@ private:
     juce::AudioProcessorValueTreeState parameters;
 
     std::atomic<float>* delay [num_delays] = { nullptr };
-    std::atomic<float>* fdbk[num_delays] = { nullptr };
+    std::atomic<float>* fdbk [num_delays] = { nullptr };
     std::atomic<float>* blend = nullptr;
     //==============================================================================
     const float delay_buffer_length = 2.0f;
