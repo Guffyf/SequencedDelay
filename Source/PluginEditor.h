@@ -12,12 +12,14 @@
 #include "PluginProcessor.h"
 
 //==============================================================================
-/**
-*/
-class BasicDelayAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Slider::Listener
+typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
+typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
+
+//==============================================================================
+class BasicDelayAudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
-    BasicDelayAudioProcessorEditor (BasicDelayAudioProcessor&);
+    BasicDelayAudioProcessorEditor(BasicDelayAudioProcessor& p, juce::AudioProcessorValueTreeState& vts);
     ~BasicDelayAudioProcessorEditor() override;
 
     //==============================================================================
@@ -25,14 +27,16 @@ public:
     void resized() override;
 
 private:
-    void sliderValueChanged(juce::Slider* slider) override;
-
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
-    BasicDelayAudioProcessor& audioProcessor;
+    juce::AudioProcessorValueTreeState& valueTreeState;
 
     juce::Slider delay[BasicDelayAudioProcessor::num_delays];
+    std::unique_ptr<SliderAttachment> delayAttach[BasicDelayAudioProcessor::num_delays];
+
     juce::Slider feedback[BasicDelayAudioProcessor::num_delays];
+    std::unique_ptr<SliderAttachment> feedbackAttach[BasicDelayAudioProcessor::num_delays];
+
+    juce::Slider blend;
+    std::unique_ptr<SliderAttachment> blendAttach;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BasicDelayAudioProcessorEditor)
 };

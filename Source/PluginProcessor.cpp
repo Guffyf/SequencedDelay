@@ -10,20 +10,6 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-BasicDelayAudioProcessor::BasicDelayAudioProcessor()
-#ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       )
-#endif
-{
-}
-
 BasicDelayAudioProcessor::~BasicDelayAudioProcessor()
 {
 }
@@ -154,14 +140,14 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
         for (int i = 0; i < num_delays; ++i)
         {
-            writeDelay(delayMilliseconds[i], (delayFeedback[i] / 100.0f));
+            writeDelay(*delay[i], (*fdbk[i] / 100.0f));
         }
     }
 
     writePosition += bufferSize;
     writePosition %= delayBufferSize;
 
-    float wetGain = blend / 100.0f;
+    float wetGain = *blend / 100.0f;
 
     mainBuffer->applyGain(1.0f - wetGain);
     for (channel = 0; channel < totalNumInputChannels; ++channel)
@@ -172,6 +158,7 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     wetBuffer.clear();
 }
 
+// Loads the delayBuffer with new incoming information
 void BasicDelayAudioProcessor::loadDelayBuffer()
 {
     auto* channelData = mainBuffer->getWritePointer(channel);
@@ -194,6 +181,7 @@ void BasicDelayAudioProcessor::loadDelayBuffer()
     }
 }
 
+// Reads from delayBuffer and copies to wetBuffer
 void BasicDelayAudioProcessor::writeDelay(float delayTime, float delayGain)
 {
     int readPosition = writePosition - (getSampleRate() * (delayTime / 1000.0f));
@@ -225,21 +213,26 @@ bool BasicDelayAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* BasicDelayAudioProcessor::createEditor()
 {
-    return new BasicDelayAudioProcessorEditor (*this);
+    return new BasicDelayAudioProcessorEditor (*this, parameters);
 }
 
 //==============================================================================
+// Saves state information to a juce::MemoryBlock object for storage
 void BasicDelayAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml(state.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
+// Restores parameters from information saved using getStateInformation
 void BasicDelayAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
+
+    if (xml.get() != nullptr) 
+        if (xml->hasTagName(parameters.state.getType()))
+            parameters.replaceState(juce::ValueTree::fromXml(*xml));
 }
 
 //==============================================================================
