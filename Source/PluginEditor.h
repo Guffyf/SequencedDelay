@@ -44,6 +44,9 @@ private:
     juce::Slider feedback[BasicDelayAudioProcessor::num_delays];
     std::unique_ptr<SliderAttachment> feedbackAttach[BasicDelayAudioProcessor::num_delays];
 
+    juce::Slider pan[BasicDelayAudioProcessor::num_delays];
+    std::unique_ptr<SliderAttachment> panAttach[BasicDelayAudioProcessor::num_delays];
+
     juce::Slider blend;
     std::unique_ptr<SliderAttachment> blendAttach;
 

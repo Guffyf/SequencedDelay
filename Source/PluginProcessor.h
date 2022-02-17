@@ -25,8 +25,9 @@ public:
         for (int i = 1; i <= num_delays; ++i)
         {
             auto numStr = std::to_string(i);
-            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, "Delay " + numStr, 0.0f, 2000.0f, 100.0f));
-            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, "Feedback " + numStr, 0.0f, 100.0f, 100.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, "Delay " + numStr, 0.0f, 2000.0f, 250.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, "Feedback " + numStr, 0.0f, 100.0f, 0.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr, "Pan " + numStr, 0.0f, 100.0f, 50.0f));
         }
 
         layout.add(std::make_unique<juce::AudioParameterFloat>("blend", "Dry/Wet", 0.0f, 100.0f, 100.0f));
@@ -40,8 +41,10 @@ public:
     {
         for (int i = 0; i < num_delays; ++i)
         {
-            delay[i] = parameters.getRawParameterValue("delay" + std::to_string(i + 1));
-            fdbk[i] = parameters.getRawParameterValue("fdbk" + std::to_string(i + 1));
+            auto numStr = std::to_string(i + 1);
+            delay[i] = parameters.getRawParameterValue("delay" + numStr);
+            fdbk[i] = parameters.getRawParameterValue("fdbk" + numStr);
+            pan[i] = parameters.getRawParameterValue("pan" + numStr);
         }
 
         blend = parameters.getRawParameterValue("blend");
@@ -59,7 +62,7 @@ public:
 
     void loadDelayBuffer();
 
-    void writeDelay(float delayTime, float delayGain);
+    void writeDelay(float delayTime, float delayGain, float delayPan);
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -94,6 +97,7 @@ private:
 
     std::atomic<float>* delay [num_delays] = { nullptr };
     std::atomic<float>* fdbk [num_delays] = { nullptr };
+    std::atomic<float>* pan [num_delays] = { nullptr };
     std::atomic<float>* blend = nullptr;
     //==============================================================================
     const float delay_buffer_length = 2.0f;
