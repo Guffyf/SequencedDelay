@@ -2,7 +2,8 @@
 
 <JUCERPROJECT id="ACQRwh" name="SequencedDelay" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
-              pluginName="Sequenced Delay" pluginManufacturer="Gabe Rook">
+              pluginName="Sequenced Delay" pluginManufacturer="Gabe Rook" pluginManufacturerCode="Rook"
+              pluginCode="Seqd" bundleIdentifier="com.GabeRook.SequencedDelay">
   <MAINGROUP id="c8YETR" name="SequencedDelay">
     <GROUP id="{5F16AB13-F1A1-D85D-5A95-774E5A6EC880}" name="Source">
       <FILE id="E7rI6g" name="PluginProcessor.cpp" compile="1" resource="0"
@@ -18,8 +19,9 @@
   <EXPORTFORMATS>
     <VS2019 targetFolder="Builds/VisualStudio2019">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="SequencedDelay"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="SequencedDelay" useRuntimeLibDLL="0"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="SequencedDelay_Debug"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="SequencedDelay_Release"
+                       useRuntimeLibDLL="0"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../../../../../../Program Files/JUCE/modules"/>
