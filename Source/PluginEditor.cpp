@@ -63,7 +63,7 @@ void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (24.0f);
     g.drawFittedText ("Sequenced Delay", 0, 100, getWidth(), 30, juce::Justification::centred, 1);
-    g.drawFittedText("Gabe Rook - 20220211", 0, 140, getWidth(), 30, juce::Justification::centred, 1);
+    g.drawFittedText("Gabe Rook - 20220216", 0, 140, getWidth(), 30, juce::Justification::centred, 1);
 }
 
 void BasicDelayAudioProcessorEditor::resized()
