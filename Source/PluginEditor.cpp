@@ -18,12 +18,14 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor(BasicDelayAudioPr
     for (int i = 0; i < BasicDelayAudioProcessor::num_delays; ++i)
     {
         delay[i].setSliderStyle(juce::Slider::LinearBar);
+        delay[i].setColour(juce::Slider::ColourIds::trackColourId, rainbow[i % 7]);
         delay[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         delay[i].setTextValueSuffix(" ms");
         addAndMakeVisible(&delay[i]);
         delayAttach[i].reset(new SliderAttachment(valueTreeState, "delay" + std::to_string(i + 1), delay[i]));
 
         feedback[i].setSliderStyle(juce::Slider::LinearBar);
+        feedback[i].setColour(juce::Slider::ColourIds::trackColourId, rainbow[i % 7]);
         feedback[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         feedback[i].setTextValueSuffix("%");
         addAndMakeVisible(&feedback[i]);

@@ -34,9 +34,9 @@ public:
         return layout;
     }
 
-    BasicDelayAudioProcessor() : parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
-    #ifndef JucePlugin_PreferredChannelConfigurations : AudioProcessor(BusesProperties())
-    #endif
+    // https://docs.juce.com/master/tutorial_audio_bus_layouts.html
+    // https://docs.juce.com/master/tutorial_audio_processor_value_tree_state.html
+    BasicDelayAudioProcessor() : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true).withOutput("Output", juce::AudioChannelSet::stereo(), true)), parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
     {
         for (int i = 0; i < num_delays; ++i)
         {
@@ -46,15 +46,14 @@ public:
 
         blend = parameters.getRawParameterValue("blend");
     }
+
     ~BasicDelayAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
-   #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-   #endif
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
@@ -64,7 +63,7 @@ public:
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
-    bool hasEditor() const override;
+    inline bool hasEditor() const override { return true; }
 
     //==============================================================================
     const juce::String getName() const override;
@@ -86,12 +85,11 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==============================================================================
-    static constexpr int num_delays = 6;
+    static constexpr int num_delays = 8;
     
     
 private:
     //==============================================================================
-    // https://docs.juce.com/master/tutorial_audio_processor_value_tree_state.html
     juce::AudioProcessorValueTreeState parameters;
 
     std::atomic<float>* delay [num_delays] = { nullptr };

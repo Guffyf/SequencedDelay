@@ -14,6 +14,15 @@
 //==============================================================================
 typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
+typedef juce::uint8 int8;
+
+const juce::Colour rainbow[7] = { juce::Colour((int8)255, (int8)0, (int8)0, 0.5f),
+                                  juce::Colour((int8)255, (int8)127, (int8)0, 0.5f),
+                                  juce::Colour((int8)255, (int8)255, (int8)0, 0.5f),
+                                  juce::Colour((int8)0, (int8)255, (int8)0, 0.5f),
+                                  juce::Colour((int8)0, (int8)0, (int8)255, 0.5f),
+                                  juce::Colour((int8)75, (int8)0, (int8)130, 0.5f),
+                                  juce::Colour((int8)148, (int8)0, (int8)211, 0.5f) };
 
 //==============================================================================
 class BasicDelayAudioProcessorEditor  : public juce::AudioProcessorEditor

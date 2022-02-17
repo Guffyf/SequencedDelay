@@ -89,32 +89,19 @@ void BasicDelayAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
-#ifndef JucePlugin_PreferredChannelConfigurations
 bool BasicDelayAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+    if (layouts.getMainInputChannelSet() != juce::AudioChannelSet::stereo()
+        && layouts.getMainInputChannelSet() != juce::AudioChannelSet::mono())
         return false;
-   #endif
 
     return true;
-  #endif
 }
-#endif
 
+//==============================================================================
 void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     // Default JUCE code start
@@ -182,6 +169,8 @@ void BasicDelayAudioProcessor::loadDelayBuffer()
 }
 
 // Reads from delayBuffer and copies to wetBuffer
+// @param delayTime - Delay time in ms
+// @param delayGain - Delay gain in %
 void BasicDelayAudioProcessor::writeDelay(float delayTime, float delayGain)
 {
     int readPosition = writePosition - (getSampleRate() * (delayTime / 1000.0f));
@@ -206,17 +195,11 @@ void BasicDelayAudioProcessor::writeDelay(float delayTime, float delayGain)
 }
 
 //==============================================================================
-bool BasicDelayAudioProcessor::hasEditor() const
-{
-    return true; // (change this to false if you choose to not supply an editor)
-}
-
 juce::AudioProcessorEditor* BasicDelayAudioProcessor::createEditor()
 {
     return new BasicDelayAudioProcessorEditor (*this, parameters);
 }
 
-//==============================================================================
 // Saves state information to a juce::MemoryBlock object for storage
 void BasicDelayAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
