@@ -11,7 +11,7 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-
+const float pi = 2 * acos(0.0);
 
 //==============================================================================
 class BasicDelayAudioProcessor  : public juce::AudioProcessor

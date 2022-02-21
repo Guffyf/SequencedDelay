@@ -183,11 +183,11 @@ void BasicDelayAudioProcessor::writeDelay(float delayTime, float delayGain, floa
     float gain;
     if (channel == 0)
     {
-        gain = (1.0f - delayPan) * delayGain;
+        gain = sin(0.5f * pi * (1.0f - delayPan)) * delayGain;
     }
     else
     {
-        gain = delayPan * delayGain;
+        gain = sin(0.5f * pi * delayPan) * delayGain;
     }
     
 
