@@ -107,6 +107,8 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto inputChannels  = getTotalNumInputChannels();
     auto outputChannels = getTotalNumOutputChannels();
 
+    juce::AudioPlayHead::CurrentPositionInfo(pos);
+
     // Use global variable mainBuffer to provide access to buffer in helper methods
     mainBuffer = &buffer;
 
@@ -127,7 +129,7 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
         for (int i = 0; i < num_delays; ++i)
         {
-            writeDelay(*delay[i], (*fdbk[i] / 100.0f), (*pan[i] / 100.0f));
+            writeDelay(*delay[i], (*fdbk[i] / 100.0f), (*pan[i] / 100.0f), (bool)*sync[i], (int)*sixt[i]);
         }
     }
 
@@ -171,37 +173,47 @@ void BasicDelayAudioProcessor::loadDelayBuffer()
 // Reads from delayBuffer and copies to wetBuffer
 // @param delayTime - Delay time in ms
 // @param delayGain - Delay gain in %
-void BasicDelayAudioProcessor::writeDelay(float delayTime, float delayGain, float delayPan)
+void BasicDelayAudioProcessor::writeDelay(float time, float gain, float pan, bool sync, int sixt)
 {
-    int readPosition = writePosition - (getSampleRate() * (delayTime / 1000.0f));
+    int readPosition;
+    if (!sync)
+    {
+        readPosition = writePosition - (getSampleRate() * (time / 1000.0f));
+    }
+    else
+    {
+        readPosition = writePosition - (getSampleRate() * (60.0f / pos.bpm) * (sixt / 4.0f));
+    }
 
     if (readPosition < 0)
     {
         readPosition += delayBufferSize;
     }
 
-    float gain;
+    // Panning
+    // https://forum.cockos.com/showthread.php?t=49809
+    float channelGain;
     if (channel == 0)
     {
-        gain = sin(0.5f * pi * (1.0f - delayPan)) * delayGain;
+        channelGain = sin(0.5f * pi * (1.0f - pan)) * gain;
     }
     else
     {
-        gain = sin(0.5f * pi * delayPan) * delayGain;
+        channelGain = sin(0.5f * pi * pan) * gain;
     }
     
 
     if (readPosition + bufferSize < delayBufferSize)
     {
-        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, gain, gain);
+        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, channelGain, channelGain);
     }
     else
     {
         int numSamplesToEnd = delayBufferSize - readPosition;
         int numSamplesAtStart = bufferSize - numSamplesToEnd;
 
-        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, gain, gain);
-        wetBuffer.addFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, gain, gain);
+        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, channelGain, channelGain);
+        wetBuffer.addFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel), numSamplesAtStart, channelGain, channelGain);
     }
 }
 

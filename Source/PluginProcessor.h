@@ -12,6 +12,7 @@
 
 //==============================================================================
 const float pi = 2 * acos(0.0);
+static constexpr int num_delays = 8;
 
 //==============================================================================
 class BasicDelayAudioProcessor  : public juce::AudioProcessor
@@ -25,9 +26,11 @@ public:
         for (int i = 1; i <= num_delays; ++i)
         {
             auto numStr = std::to_string(i);
-            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, "Delay " + numStr, 0.0f, 2000.0f, 250.0f));
-            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, "Feedback " + numStr, 0.0f, 100.0f, 0.0f));
-            layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr, "Pan " + numStr, 0.0f, 100.0f, 50.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, "Delay " + numStr + " Time", 0.0f, 2000.0f, 250.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, "Delay " + numStr + " Feedback", 0.0f, 100.0f, 0.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr, "Delay " + numStr + " Pan", 0.0f, 100.0f, 50.0f));
+            layout.add(std::make_unique<juce::AudioParameterBool>("sync" + numStr, "Delay " + numStr + " Sync", false));
+            layout.add(std::make_unique<juce::AudioParameterInt>("sixt" + numStr, "Delay " + numStr + " Sixteenths", 1, 16, 4));
         }
 
         layout.add(std::make_unique<juce::AudioParameterFloat>("blend", "Dry/Wet", 0.0f, 100.0f, 100.0f));
@@ -45,6 +48,8 @@ public:
             delay[i] = parameters.getRawParameterValue("delay" + numStr);
             fdbk[i] = parameters.getRawParameterValue("fdbk" + numStr);
             pan[i] = parameters.getRawParameterValue("pan" + numStr);
+            sync[i] = parameters.getRawParameterValue("sync" + numStr);
+            sixt[i] = parameters.getRawParameterValue("sixt" + numStr);
         }
 
         blend = parameters.getRawParameterValue("blend");
@@ -62,7 +67,7 @@ public:
 
     void loadDelayBuffer();
 
-    void writeDelay(float delayTime, float delayGain, float delayPan);
+    void writeDelay(float time, float gain, float pan, bool sync, int sixt);
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -87,10 +92,6 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    //==============================================================================
-    static constexpr int num_delays = 8;
-    
-    
 private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
@@ -98,6 +99,8 @@ private:
     std::atomic<float>* delay [num_delays] = { nullptr };
     std::atomic<float>* fdbk [num_delays] = { nullptr };
     std::atomic<float>* pan [num_delays] = { nullptr };
+    std::atomic<float>* sync [num_delays] = { nullptr };
+    std::atomic<float>* sixt [num_delays] = { nullptr };
     std::atomic<float>* blend = nullptr;
     //==============================================================================
     const float delay_buffer_length = 2.0f;
@@ -112,6 +115,9 @@ private:
 
     int channel{ 0 };
     int writePosition{ 0 };
+    //==============================================================================
+    juce::AudioPlayHead::CurrentPositionInfo pos;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BasicDelayAudioProcessor)
 };
