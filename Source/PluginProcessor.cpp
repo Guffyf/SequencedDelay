@@ -80,6 +80,9 @@ void BasicDelayAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
 {
     auto delayBufferSize = sampleRate * delay_buffer_length;
     delayBuffer.setSize(getTotalNumOutputChannels(), static_cast<int>(delayBufferSize));
+
+    delayBuffer.clear();
+    wetBuffer.clear();
 }
 
 void BasicDelayAudioProcessor::releaseResources()
@@ -117,6 +120,7 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     bufferSize = mainBuffer->getNumSamples();
     delayBufferSize = delayBuffer.getNumSamples();
 
+    // For mono inputs, copy left channel to right channel
     for (channel = inputChannels; channel < outputChannels; ++channel)
     {
         buffer.clear(channel, 0, buffer.getNumSamples());

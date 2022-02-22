@@ -26,21 +26,30 @@ public:
         for (int i = 1; i <= num_delays; ++i)
         {
             auto numStr = std::to_string(i);
-            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, "Delay " + numStr + " Time", 0.0f, 2000.0f, 250.0f));
-            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, "Delay " + numStr + " Feedback", 0.0f, 100.0f, 0.0f));
-            layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr, "Delay " + numStr + " Pan", 0.0f, 100.0f, 50.0f));
-            layout.add(std::make_unique<juce::AudioParameterBool>("sync" + numStr, "Delay " + numStr + " Sync", false));
-            layout.add(std::make_unique<juce::AudioParameterInt>("sixt" + numStr, "Delay " + numStr + " Sixteenths", 1, 16, 4));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, 
+                "Delay " + numStr + " Time", 0.0f, 2000.0f, 250.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, 
+                "Delay " + numStr + " Feedback", 0.0f, 100.0f, 0.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr, 
+                "Delay " + numStr + " Pan", 0.0f, 100.0f, 50.0f));
+            layout.add(std::make_unique<juce::AudioParameterBool>("sync" + numStr, 
+                "Delay " + numStr + " Sync", false));
+            layout.add(std::make_unique<juce::AudioParameterInt>("sixt" + numStr, 
+                "Delay " + numStr + " Sixteenths", 1, 16, 4));
         }
 
-        layout.add(std::make_unique<juce::AudioParameterFloat>("blend", "Dry/Wet", 0.0f, 100.0f, 100.0f));
+        layout.add(std::make_unique<juce::AudioParameterFloat>("blend", 
+            "Dry/Wet", 0.0f, 100.0f, 100.0f));
 
         return layout;
     }
 
     // https://docs.juce.com/master/tutorial_audio_bus_layouts.html
     // https://docs.juce.com/master/tutorial_audio_processor_value_tree_state.html
-    BasicDelayAudioProcessor() : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true).withOutput("Output", juce::AudioChannelSet::stereo(), true)), parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
+    BasicDelayAudioProcessor() : 
+        AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
+                                        .withOutput("Output", juce::AudioChannelSet::stereo(), true)), 
+        parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
     {
         for (int i = 0; i < num_delays; ++i)
         {

@@ -10,10 +10,13 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor(BasicDelayAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
+BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
+(BasicDelayAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor(&p), valueTreeState(vts)
 {
-    setSize (800, 400 + (50 * num_delays));
+    setLookAndFeel(&look);
+
+    setSize (800, 420 + (50 * num_delays));
 
     for (int i = 0; i < num_delays; ++i)
     {
@@ -29,6 +32,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor(BasicDelayAudioPr
         delay[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
         delay[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         delay[i].setTextValueSuffix(" ms");
+        delay[i].setLookAndFeel(&look);
         addAndMakeVisible(&delay[i]);
         delayAttach[i].reset(new SliderAttachment(valueTreeState, "delay" + numStr, delay[i]));
 
@@ -36,6 +40,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor(BasicDelayAudioPr
         sixt[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
         sixt[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         sixt[i].setTextValueSuffix("/16");
+        sixt[i].setLookAndFeel(&look);
         addAndMakeVisible(&sixt[i]);
         sixtAttach[i].reset(new SliderAttachment(valueTreeState, "sixt" + numStr, sixt[i]));
 
@@ -43,11 +48,12 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor(BasicDelayAudioPr
         feedback[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
         feedback[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         feedback[i].setTextValueSuffix("%");
+        feedback[i].setLookAndFeel(&look);
         addAndMakeVisible(&feedback[i]);
         feedbackAttach[i].reset(new SliderAttachment(valueTreeState, "fdbk" + numStr, feedback[i]));
 
         pan[i].setSliderStyle(juce::Slider::Rotary);
-        pan[i].setColour(juce::Slider::ColourIds::thumbColourId, colour.withAlpha(1.0f));
+        pan[i].setColour(juce::Slider::ColourIds::thumbColourId, colour);
         pan[i].setTextBoxStyle(juce::Slider::NoTextBox, false, 60, 30);
         pan[i].setTextValueSuffix("%");
         addAndMakeVisible(&pan[i]);
@@ -64,6 +70,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor(BasicDelayAudioPr
     }
 
     blend.setSliderStyle(juce::Slider::Rotary);
+    blend.setColour(juce::Slider::ColourIds::thumbColourId, juce::Colours::black.withAlpha(0.5f));
     blend.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 30);
     blend.setTextValueSuffix("%");
     blendAttach.reset(new SliderAttachment(valueTreeState, "blend", blend));
@@ -72,38 +79,45 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor(BasicDelayAudioPr
 
 BasicDelayAudioProcessorEditor::~BasicDelayAudioProcessorEditor()
 {
+    setLookAndFeel(nullptr);
 }
 
 //==============================================================================
 void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // Fill whole window
-    g.fillAll (juce::Colour(0xff0a0a0a));
+    g.fillAll (juce::Colour(0xff1a1a1a));
 
     // Set current drawing color
     g.setColour (juce::Colours::white);
 
-    g.setFont (24.0f);
-    g.drawFittedText ("Sequenced Delay", 0, 100, getWidth(), 30, juce::Justification::centred, 1);
-    g.drawFittedText("Gabe Rook - 20220221", 0, 140, getWidth(), 30, juce::Justification::centred, 1);
+    g.setFont (32.0f);
+    g.drawFittedText("Sequenced Delay", 0, 100, getWidth(), 40, juce::Justification::centred, 1);
+    g.drawFittedText("Gabe Rook - 20220221", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
+
+    g.setFont(12.0f);
+    g.drawFittedText("Sync", 100, 200, 40, 20, juce::Justification::centred, 1);
+    g.drawFittedText("Delay Time", 150, 200, 245, 20, juce::Justification::centred, 1);
+    g.drawFittedText("Gain", 405, 200, 245, 20, juce::Justification::centred, 1);
+    g.drawFittedText("Pan", 660, 200, 40, 20, juce::Justification::centred, 1);
 }
 
 void BasicDelayAudioProcessorEditor::resized()
 {
     /// Called at initialization, and at resize if enabled
     // Set location of all components
-    int i;
+    int a = 220;
+    int i, h;
     for (i = 0; i < num_delays; ++i)
     {
-        auto h = i * 50;
-        sync[i].setBounds(100, 200 + h, 40, 40);
-        delay[i].setBounds(150, 200 + h, 245, 40);
-        sixt[i].setBounds(150, 200 + h, 245, 40);
-        feedback[i].setBounds(405, 200 + h, 245, 40);
-        pan[i].setBounds(660, 200 + h, 40, 40);
+        h = i * 50;
+        sync[i].setBounds(100, a + h, 40, 40);
+        delay[i].setBounds(150, a + h, 245, 40);
+        sixt[i].setBounds(150, a + h, 245, 40);
+        feedback[i].setBounds(405, a + h, 245, 40);
+        pan[i].setBounds(660, a + h, 40, 40);
     }
-
-    blend.setBounds(350, 200 + (i * 50), 100, 100);
+    blend.setBounds(350, a + 50 + h, 100, 100);
 }
 
 void BasicDelayAudioProcessorEditor::buttonClicked(juce::Button* button)
