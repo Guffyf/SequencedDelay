@@ -54,8 +54,7 @@ double BasicDelayAudioProcessor::getTailLengthSeconds() const
 
 int BasicDelayAudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1;
 }
 
 int BasicDelayAudioProcessor::getCurrentProgram()
@@ -107,7 +106,10 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto inputChannels  = getTotalNumInputChannels();
     auto outputChannels = getTotalNumOutputChannels();
 
-    juce::AudioPlayHead::CurrentPositionInfo(pos);
+    if (auto playhead = this->getPlayHead())
+    {
+        playhead->getCurrentPosition(pos);
+    }
 
     // Use global variable mainBuffer to provide access to buffer in helper methods
     mainBuffer = &buffer;
