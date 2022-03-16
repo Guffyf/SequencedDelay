@@ -44,13 +44,13 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         addAndMakeVisible(&sixt[i]);
         sixtAttach[i].reset(new SliderAttachment(valueTreeState, "sixt" + numStr, sixt[i]));
 
-        feedback[i].setSliderStyle(juce::Slider::LinearBar);
-        feedback[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
-        feedback[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
-        feedback[i].setTextValueSuffix("%");
-        feedback[i].setLookAndFeel(&look);
-        addAndMakeVisible(&feedback[i]);
-        feedbackAttach[i].reset(new SliderAttachment(valueTreeState, "fdbk" + numStr, feedback[i]));
+        gain[i].setSliderStyle(juce::Slider::LinearBar);
+        gain[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
+        gain[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
+        gain[i].setTextValueSuffix("%");
+        gain[i].setLookAndFeel(&look);
+        addAndMakeVisible(&gain[i]);
+        feedbackAttach[i].reset(new SliderAttachment(valueTreeState, "gain" + numStr, gain[i]));
 
         pan[i].setSliderStyle(juce::Slider::Rotary);
         pan[i].setColour(juce::Slider::ColourIds::thumbColourId, colour);
@@ -114,7 +114,7 @@ void BasicDelayAudioProcessorEditor::resized()
         sync[i].setBounds(100, a + h, 40, 40);
         delay[i].setBounds(150, a + h, 245, 40);
         sixt[i].setBounds(150, a + h, 245, 40);
-        feedback[i].setBounds(405, a + h, 245, 40);
+        gain[i].setBounds(405, a + h, 245, 40);
         pan[i].setBounds(660, a + h, 40, 40);
     }
     blend.setBounds(350, a + 50 + h, 100, 100);

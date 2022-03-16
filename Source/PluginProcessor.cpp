@@ -78,6 +78,11 @@ void BasicDelayAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void BasicDelayAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
+    for (int i = 0; i < num_delays; ++i)
+    {
+        gainSmooth[i].reset(sampleRate, 0.00002f);
+    }
+    
     auto delayBufferSize = sampleRate * delay_buffer_length;
     delayBuffer.setSize(getTotalNumOutputChannels(), static_cast<int>(delayBufferSize));
 
@@ -129,13 +134,20 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     wetBuffer.setSize(getTotalNumOutputChannels(), bufferSize);
 
+    // Set new target for SmoothedValue objects
+    for (int i = 0; i < num_delays; ++i)
+    {
+        gainSmooth[i].setTargetValue(*gain[i]);
+    }
+
+    // Loop handling writing of delays
     for (channel = 0; channel < outputChannels; ++channel)
     {
         loadDelayBuffer();
 
         for (int i = 0; i < num_delays; ++i)
         {
-            writeDelay(*delay[i], (*fdbk[i] / 100.0f), (*pan[i] / 100.0f), (bool)*sync[i], (int)*sixt[i]);
+            writeDelay(*delay[i], (gainSmooth[i].getNextValue() / 100.0f), (*pan[i] / 100.0f), (bool)*sync[i], (int)*sixt[i]);
         }
     }
 

@@ -102,7 +102,7 @@ private:
     juce::Slider delay[num_delays];
     std::unique_ptr<SliderAttachment> delayAttach[num_delays];
 
-    juce::Slider feedback[num_delays];
+    juce::Slider gain[num_delays];
     std::unique_ptr<SliderAttachment> feedbackAttach[num_delays];
 
     juce::Slider pan[num_delays];

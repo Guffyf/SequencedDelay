@@ -15,7 +15,7 @@ const float pi = 2 * acos(0.0);
 static constexpr int num_delays = 8;
 
 //==============================================================================
-class BasicDelayAudioProcessor  : public juce::AudioProcessor
+class BasicDelayAudioProcessor : public juce::AudioProcessor
 {
 public:
     //==============================================================================
@@ -26,19 +26,19 @@ public:
         for (int i = 1; i <= num_delays; ++i)
         {
             auto numStr = std::to_string(i);
-            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr, 
+            layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr,
                 "Delay " + numStr + " Time", 0.0f, 2000.0f, 250.0f));
-            layout.add(std::make_unique<juce::AudioParameterFloat>("fdbk" + numStr, 
-                "Delay " + numStr + " Feedback", 0.0f, 100.0f, 0.0f));
-            layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr, 
+            layout.add(std::make_unique<juce::AudioParameterFloat>("gain" + numStr,
+                "Delay " + numStr + " Gain", 0.0f, 100.0f, 0.0f));
+            layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr,
                 "Delay " + numStr + " Pan", 0.0f, 100.0f, 50.0f));
-            layout.add(std::make_unique<juce::AudioParameterBool>("sync" + numStr, 
+            layout.add(std::make_unique<juce::AudioParameterBool>("sync" + numStr,
                 "Delay " + numStr + " Sync", false));
-            layout.add(std::make_unique<juce::AudioParameterInt>("sixt" + numStr, 
+            layout.add(std::make_unique<juce::AudioParameterInt>("sixt" + numStr,
                 "Delay " + numStr + " Sixteenths", 1, 16, 4));
         }
 
-        layout.add(std::make_unique<juce::AudioParameterFloat>("blend", 
+        layout.add(std::make_unique<juce::AudioParameterFloat>("blend",
             "Dry/Wet", 0.0f, 100.0f, 100.0f));
 
         return layout;
@@ -46,16 +46,16 @@ public:
 
     // https://docs.juce.com/master/tutorial_audio_bus_layouts.html
     // https://docs.juce.com/master/tutorial_audio_processor_value_tree_state.html
-    BasicDelayAudioProcessor() : 
+    BasicDelayAudioProcessor() :
         AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
-                                        .withOutput("Output", juce::AudioChannelSet::stereo(), true)), 
+            .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
         parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
     {
         for (int i = 0; i < num_delays; ++i)
         {
             auto numStr = std::to_string(i + 1);
             delay[i] = parameters.getRawParameterValue("delay" + numStr);
-            fdbk[i] = parameters.getRawParameterValue("fdbk" + numStr);
+            gain[i] = parameters.getRawParameterValue("gain" + numStr);
             pan[i] = parameters.getRawParameterValue("pan" + numStr);
             sync[i] = parameters.getRawParameterValue("sync" + numStr);
             sixt[i] = parameters.getRawParameterValue("sixt" + numStr);
@@ -67,12 +67,12 @@ public:
     ~BasicDelayAudioProcessor() override;
 
     //==============================================================================
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+    bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     void loadDelayBuffer();
 
@@ -93,20 +93,21 @@ public:
     //==============================================================================
     int getNumPrograms() override;
     int getCurrentProgram() override;
-    void setCurrentProgram (int index) override;
-    const juce::String getProgramName (int index) override;
-    void changeProgramName (int index, const juce::String& newName) override;
+    void setCurrentProgram(int index) override;
+    const juce::String getProgramName(int index) override;
+    void changeProgramName(int index, const juce::String& newName) override;
 
     //==============================================================================
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
 
 private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
 
     std::atomic<float>* delay [num_delays] = { nullptr };
-    std::atomic<float>* fdbk [num_delays] = { nullptr };
+    std::atomic<float>* gain [num_delays] = { nullptr };
+    juce::SmoothedValue<float> gainSmooth [num_delays] = { 0.0f };
     std::atomic<float>* pan [num_delays] = { nullptr };
     std::atomic<float>* sync [num_delays] = { nullptr };
     std::atomic<float>* sixt [num_delays] = { nullptr };
