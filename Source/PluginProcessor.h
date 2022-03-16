@@ -73,10 +73,9 @@ public:
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-
     void loadDelayBuffer();
-
-    void writeDelay(float time, float gain, float pan, bool sync, int sixt);
+    void writeDelay(const size_t& delayNum);
+    void writeDelay(float time, float gain, float pan);
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -106,14 +105,16 @@ private:
     juce::AudioProcessorValueTreeState parameters;
 
     std::atomic<float>* delay [num_delays] = { nullptr };
+    std::atomic<float>* sixt [num_delays] = { nullptr };
+    juce::SmoothedValue<int> delaySamples [num_delays] = { 0 };
     std::atomic<float>* gain [num_delays] = { nullptr };
     juce::SmoothedValue<float> gainSmooth [num_delays] = { 0.0f };
     std::atomic<float>* pan [num_delays] = { nullptr };
     std::atomic<float>* sync [num_delays] = { nullptr };
-    std::atomic<float>* sixt [num_delays] = { nullptr };
+    
     std::atomic<float>* blend = nullptr;
     //==============================================================================
-    const float delay_buffer_length = 2.0f;
+    const float delay_buffer_length = 5.0f;
     //==============================================================================
     juce::AudioBuffer<float>* mainBuffer;
     int bufferSize{ 0 };

@@ -80,6 +80,7 @@ void BasicDelayAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
 {
     for (int i = 0; i < num_delays; ++i)
     {
+        delaySamples[i].reset(sampleRate, 0.00002f);
         gainSmooth[i].reset(sampleRate, 0.00002f);
     }
     
@@ -134,26 +135,21 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     wetBuffer.setSize(getTotalNumOutputChannels(), bufferSize);
 
-    // Set new target for SmoothedValue objects
-    for (int i = 0; i < num_delays; ++i)
-    {
-        gainSmooth[i].setTargetValue(*gain[i]);
-    }
-
     // Loop handling writing of delays
     for (channel = 0; channel < outputChannels; ++channel)
     {
         loadDelayBuffer();
 
-        for (int i = 0; i < num_delays; ++i)
+        for (size_t i = 0; i < num_delays; ++i)
         {
-            writeDelay(*delay[i], (gainSmooth[i].getNextValue() / 100.0f), (*pan[i] / 100.0f), (bool)*sync[i], (int)*sixt[i]);
+            writeDelay(i);
         }
     }
 
     writePosition += bufferSize;
     writePosition %= delayBufferSize;
 
+    // Dry/wet mixing
     float wetGain = *blend / 100.0f;
 
     mainBuffer->applyGain(1.0f - wetGain);
@@ -188,20 +184,29 @@ void BasicDelayAudioProcessor::loadDelayBuffer()
     }
 }
 
-// Reads from delayBuffer and copies to wetBuffer
-// @param delayTime - Delay time in ms
-// @param delayGain - Delay gain in %
-void BasicDelayAudioProcessor::writeDelay(float time, float gain, float pan, bool sync, int sixt)
+void BasicDelayAudioProcessor::writeDelay(const size_t& delayNum)
 {
-    int readPosition;
-    if (!sync)
+    // Update gainSmooth and delaySamples
+    gainSmooth[delayNum].setTargetValue(*gain[delayNum]);
+    if (!(*sync[delayNum]))
     {
-        readPosition = writePosition - (getSampleRate() * (time / 1000.0f));
+        delaySamples[delayNum].setTargetValue(getSampleRate() * (*delay[delayNum] / 1000.0f));
     }
     else
     {
-        readPosition = writePosition - (getSampleRate() * (60.0f / pos.bpm) * (sixt / 4.0f));
+        delaySamples[delayNum].setTargetValue(getSampleRate() * (60.0f / pos.bpm) * (*sixt[delayNum] / 4.0f));
     }
+
+    writeDelay(delaySamples[delayNum].getNextValue(), (gainSmooth[delayNum].getCurrentValue() / 100.0f), (*pan[delayNum] / 100.0f));
+}
+
+// Reads from delayBuffer and copies to wetBuffer
+// @param time - Delay time in samples
+// @param gain - Delay gain
+// @param pan - Delay pan
+void BasicDelayAudioProcessor::writeDelay(float time, float gain, float pan)
+{
+    int readPosition = writePosition - time;
 
     if (readPosition < 0)
     {
