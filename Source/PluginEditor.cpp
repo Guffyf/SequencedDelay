@@ -23,10 +23,12 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         auto numStr = std::to_string(i + 1);
         auto colour = rainbow[i % 7];
 
+        select.addItem(numStr, i + 1);
+
         sync[i].setColour(juce::ToggleButton::ColourIds::tickColourId, colour);
         addAndMakeVisible(&sync[i]);
         syncAttach[i].reset(new ButtonAttachment(valueTreeState, "sync" + numStr, sync[i]));
-        sync[i].addListener(this);
+        sync[i].onClick = [this] { syncChanged(); };
 
         delay[i].setSliderStyle(juce::Slider::LinearBar);
         delay[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
@@ -58,16 +60,12 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         pan[i].setTextValueSuffix("%");
         addAndMakeVisible(&pan[i]);
         panAttach[i].reset(new SliderAttachment(valueTreeState, "pan" + numStr, pan[i]));
-
-        if (sync[i].getToggleState())
-        {
-            delay[i].setVisible(false);
-        }
-        else
-        {
-            sixt[i].setVisible(false);
-        }
     }
+
+    // https://docs.juce.com/master/tutorial_combo_box.html
+    select.onChange = [this] { selectChanged(); };
+    selectChanged();
+    addAndMakeVisible(&select);
 
     blend.setSliderStyle(juce::Slider::Rotary);
     blend.setColour(juce::Slider::ColourIds::thumbColourId, juce::Colours::black.withAlpha(0.5f));
@@ -93,7 +91,7 @@ void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (32.0f);
     g.drawFittedText("Sequenced Delay", 0, 100, getWidth(), 40, juce::Justification::centred, 1);
-    g.drawFittedText("Gabe Rook - 20220221", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
+    g.drawFittedText("Gabe Rook - 20220316", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
 
     g.setFont(12.0f);
     g.drawFittedText("Sync", 100, 200, 40, 20, juce::Justification::centred, 1);
@@ -111,28 +109,42 @@ void BasicDelayAudioProcessorEditor::resized()
     for (i = 0; i < num_delays; ++i)
     {
         h = i * 50;
-        sync[i].setBounds(100, a + h, 40, 40);
-        delay[i].setBounds(150, a + h, 245, 40);
-        sixt[i].setBounds(150, a + h, 245, 40);
-        gain[i].setBounds(405, a + h, 245, 40);
-        pan[i].setBounds(660, a + h, 40, 40);
+        sync[i].setBounds(100, a, 40, 40);
+        delay[i].setBounds(150, a, 245, 40);
+        sixt[i].setBounds(150, a, 245, 40);
+        gain[i].setBounds(405, a, 245, 40);
+        pan[i].setBounds(660, a, 40, 40);
     }
-    blend.setBounds(350, a + 50 + h, 100, 100);
+    blend.setBounds(350, a + 50, 100, 100);
+    select.setBounds(300, a + 200, 200, 40);
 }
 
-void BasicDelayAudioProcessorEditor::buttonClicked(juce::Button* button)
+void BasicDelayAudioProcessorEditor::syncChanged()
 {
-    for (int i = 0; i < num_delays; ++i)
+    for (size_t i = 0; i < num_delays; ++i)
     {
-        if (sync[i].getToggleState())
+        if (i == select.getSelectedId() - 1)
         {
-            delay[i].setVisible(false);
-            sixt[i].setVisible(true);
+            bool on = sync[i].getToggleState();
+            delay[i].setVisible(!on);
+            sixt[i].setVisible(on);
         }
-        else
-        {
-            sixt[i].setVisible(false);
-            delay[i].setVisible(true);
-        }
+    }
+}
+
+void BasicDelayAudioProcessorEditor::selectChanged()
+{
+    size_t t = select.getSelectedId() - 1;
+    bool isSelected;
+
+    for (size_t i = 0; i < num_delays; ++i)
+    {
+        isSelected = t == i;
+
+        sync[i].setVisible(isSelected);
+        delay[i].setVisible(isSelected && !sync[i].getToggleState());
+        sixt[i].setVisible(isSelected && sync[i].getToggleState());
+        gain[i].setVisible(isSelected);
+        pan[i].setVisible(isSelected);
     }
 }

@@ -78,8 +78,7 @@ public:
 };
 
 //==============================================================================
-class BasicDelayAudioProcessorEditor : public juce::AudioProcessorEditor,
-                                       public juce::Button::Listener
+class BasicDelayAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
     BasicDelayAudioProcessorEditor(BasicDelayAudioProcessor& p, juce::AudioProcessorValueTreeState& vts);
@@ -90,7 +89,8 @@ public:
     void resized() override;
 
     //==========================================================================
-    void buttonClicked(juce::Button* button) override;
+    void syncChanged();
+    void selectChanged();
 
 private:
     //==========================================================================
@@ -99,20 +99,18 @@ private:
     //==========================================================================
     juce::AudioProcessorValueTreeState& valueTreeState;
 
-    juce::Slider delay[num_delays];
-    std::unique_ptr<SliderAttachment> delayAttach[num_delays];
-
-    juce::Slider gain[num_delays];
-    std::unique_ptr<SliderAttachment> feedbackAttach[num_delays];
-
-    juce::Slider pan[num_delays];
-    std::unique_ptr<SliderAttachment> panAttach[num_delays];
+    juce::ComboBox select;
 
     juce::ToggleButton sync[num_delays];
     std::unique_ptr<ButtonAttachment> syncAttach[num_delays];
-
+    juce::Slider delay[num_delays];
+    std::unique_ptr<SliderAttachment> delayAttach[num_delays];
     juce::Slider sixt[num_delays];
     std::unique_ptr<SliderAttachment> sixtAttach[num_delays];
+    juce::Slider gain[num_delays];
+    std::unique_ptr<SliderAttachment> feedbackAttach[num_delays];
+    juce::Slider pan[num_delays];
+    std::unique_ptr<SliderAttachment> panAttach[num_delays];
 
     juce::Slider blend;
     std::unique_ptr<SliderAttachment> blendAttach;
