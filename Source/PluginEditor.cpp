@@ -1,13 +1,107 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin editor.
-
-  ==============================================================================
-*/
-
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+
+
+//==============================================================================
+customLook::customLook()
+{
+    setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::white);
+}
+
+void customLook::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, juce::Slider& s)
+{
+    // https://docs.juce.com/master/tutorial_look_and_feel_customisation.html
+    float radius = juce::jmin(width / 2, height / 2) - 1.0f;
+    float ctrX = x + (width * 0.5f);
+    float ctrY = y + (height * 0.5f);
+    float radX = ctrX - radius;
+    float radY = ctrY - radius;
+    float dia = radius * 2.0;
+    float angle = rotaryStartAngle + (sliderPos * (rotaryEndAngle - rotaryStartAngle));
+
+    // Fill
+    g.setColour(s.findColour(juce::Slider::ColourIds::thumbColourId));
+    g.fillEllipse(radX, radY, dia, dia);
+    // Outline
+    g.setColour(juce::Colours::white);
+    g.drawEllipse(radX, radY, dia, dia, 2.0f);
+    // Pointer line
+    juce::Path p;
+    float thick = 2.0f;
+    p.addRectangle(-thick * 0.5f, -radius, thick, radius);
+    p.applyTransform(juce::AffineTransform::rotation(angle).translated(ctrX, ctrY));
+    g.fillPath(p);
+}
+
+void customLook::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+{
+    juce::ignoreUnused(shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+
+    if (!button.isEnabled())
+        g.setOpacity(0.5f);
+
+    if (button.getToggleState())
+    {
+        g.setColour(button.findColour(juce::ToggleButton::ColourIds::tickColourId));
+        g.fillRect(0, 0, button.getWidth(), button.getHeight());
+    }
+    g.setColour(juce::Colours::white);
+    g.drawRect(0, 0, button.getWidth(), button.getHeight(), 1);
+}
+
+// Modified version of juce::LookAndFeel_V4::drawLinerSlider
+void customLook::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
+    float sliderPos,
+    float minSliderPos,
+    float maxSliderPos,
+    const juce::Slider::SliderStyle style, juce::Slider& slider)
+{
+    if (slider.isBar())
+    {
+        g.setColour(slider.findColour(juce::Slider::trackColourId));
+        g.fillRect(slider.isHorizontal() ? juce::Rectangle<float>(static_cast<float> (x), (float)y + 0.5f, sliderPos - (float)x, (float)height - 1.0f)
+            : juce::Rectangle<float>((float)x + 0.5f, sliderPos, (float)width - 1.0f, (float)y + ((float)height - sliderPos)));
+    }
+    else
+    {
+        auto trackWidth = juce::jmin(6.0f, slider.isHorizontal() ? (float)height * 0.25f : (float)width * 0.25f);
+
+        juce::Point<float> startPoint(slider.isHorizontal() ? (float)x : (float)x + (float)width * 0.5f,
+            slider.isHorizontal() ? (float)y + (float)height * 0.5f : (float)(height + y));
+
+        juce::Point<float> endPoint(slider.isHorizontal() ? (float)(width + x) : startPoint.x,
+            slider.isHorizontal() ? startPoint.y : (float)y);
+
+        /*
+        juce::Path backgroundTrack;
+        backgroundTrack.startNewSubPath(startPoint);
+        backgroundTrack.lineTo(endPoint);
+        g.setColour(slider.findColour(juce::Slider::backgroundColourId));
+        g.strokePath(backgroundTrack, { trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded });
+
+        juce::Path valueTrack;
+        */
+        juce::Point<float> minPoint, maxPoint, thumbPoint;
+        
+
+        auto kx = slider.isHorizontal() ? sliderPos : ((float)x + (float)width * 0.5f);
+        auto ky = slider.isHorizontal() ? ((float)y + (float)height * 0.5f) : sliderPos;
+
+        minPoint = startPoint;
+        maxPoint = { kx, ky };
+
+        auto thumbWidth = getSliderThumbRadius(slider);
+        /*
+        valueTrack.startNewSubPath(minPoint);
+        valueTrack.lineTo(maxPoint);
+        g.setColour(slider.findColour(juce::Slider::trackColourId));
+        g.strokePath(valueTrack, { trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded });
+        */
+
+        g.setColour(slider.findColour(juce::Slider::thumbColourId));
+        g.fillRect(juce::Rectangle<float>(static_cast<float> (thumbWidth), height).withCentre(maxPoint));
+    }
+}
 
 //==============================================================================
 BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
@@ -24,6 +118,12 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         auto colour = rainbow[i % 7];
 
         select.addItem(numStr, i + 1);
+
+        time[i].setSliderStyle(juce::Slider::LinearHorizontal);
+        time[i].setColour(juce::Slider::ColourIds::thumbColourId, colour.withAlpha(1.0f));
+        time[i].setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
+        time[i].setLookAndFeel(&look);
+        addAndMakeVisible(time[i]);
 
         sync[i].setColour(juce::ToggleButton::ColourIds::tickColourId, colour);
         addAndMakeVisible(&sync[i]);
@@ -91,32 +191,33 @@ void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (32.0f);
     g.drawFittedText("Sequenced Delay", 0, 100, getWidth(), 40, juce::Justification::centred, 1);
-    g.drawFittedText("Gabe Rook - 20220316", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
+    g.drawFittedText("Gabe Rook - 20220324", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
 
     g.setFont(12.0f);
-    g.drawFittedText("Sync", 100, 200, 40, 20, juce::Justification::centred, 1);
-    g.drawFittedText("Delay Time", 150, 200, 245, 20, juce::Justification::centred, 1);
-    g.drawFittedText("Gain", 405, 200, 245, 20, juce::Justification::centred, 1);
-    g.drawFittedText("Pan", 660, 200, 40, 20, juce::Justification::centred, 1);
+    const int a = 300;
+    g.drawFittedText("Sync", 100, a, 40, 20, juce::Justification::centred, 1);
+    g.drawFittedText("Delay Time", 150, a, 245, 20, juce::Justification::centred, 1);
+    g.drawFittedText("Gain", 405, a, 245, 20, juce::Justification::centred, 1);
+    g.drawFittedText("Pan", 660, a, 40, 20, juce::Justification::centred, 1);
 }
 
 void BasicDelayAudioProcessorEditor::resized()
 {
     /// Called at initialization, and at resize if enabled
     // Set location of all components
-    int a = 220;
-    int i, h;
+    const int a = 320;
+    int i;
     for (i = 0; i < num_delays; ++i)
     {
-        h = i * 50;
+        time[i].setBounds(100, 200, 600, 80);
         sync[i].setBounds(100, a, 40, 40);
         delay[i].setBounds(150, a, 245, 40);
         sixt[i].setBounds(150, a, 245, 40);
         gain[i].setBounds(405, a, 245, 40);
         pan[i].setBounds(660, a, 40, 40);
     }
-    blend.setBounds(350, a + 50, 100, 100);
-    select.setBounds(300, a + 200, 200, 40);
+    blend.setBounds(250, a + 50, 100, 100);
+    select.setBounds(400, a + 50, 200, 40);
 }
 
 void BasicDelayAudioProcessorEditor::syncChanged()

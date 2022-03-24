@@ -1,11 +1,3 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -83,6 +75,7 @@ void BasicDelayAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
         delaySamples[i].reset(sampleRate, 0.00002f);
         gainSmooth[i].reset(sampleRate, 0.00002f);
     }
+    blendSmooth.reset(sampleRate, 0.00002f);
     
     auto delayBufferSize = sampleRate * delay_buffer_length;
     delayBuffer.setSize(getTotalNumOutputChannels(), static_cast<int>(delayBufferSize));
@@ -150,7 +143,8 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     writePosition %= delayBufferSize;
 
     // Dry/wet mixing
-    float wetGain = *blend / 100.0f;
+    blendSmooth.setTargetValue(*blend);
+    float wetGain = blendSmooth.getCurrentValue() / 100.0f;
 
     mainBuffer->applyGain(1.0f - wetGain);
     for (channel = 0; channel < outputChannels; ++channel)
@@ -197,7 +191,7 @@ void BasicDelayAudioProcessor::writeDelay(const size_t& delayNum)
         delaySamples[delayNum].setTargetValue(getSampleRate() * (60.0f / pos.bpm) * (*sixt[delayNum] / 4.0f));
     }
 
-    writeDelay(delaySamples[delayNum].getNextValue(), (gainSmooth[delayNum].getCurrentValue() / 100.0f), (*pan[delayNum] / 100.0f));
+    writeDelay(delaySamples[delayNum].getCurrentValue(), (gainSmooth[delayNum].getCurrentValue() / 100.0f), (*pan[delayNum] / 100.0f));
 }
 
 // Reads from delayBuffer and copies to wetBuffer

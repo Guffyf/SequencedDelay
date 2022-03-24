@@ -1,11 +1,3 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin editor.
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include <JuceHeader.h>
@@ -14,67 +6,30 @@
 //==============================================================================
 typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
+typedef juce::Colour Colour;
 typedef juce::uint8 int8;
 
-const juce::Colour rainbow[7] = { juce::Colour((int8)255, (int8)0, (int8)0, 0.5f),
-                                  juce::Colour((int8)255, (int8)127, (int8)0, 0.5f),
-                                  juce::Colour((int8)255, (int8)255, (int8)0, 0.5f),
-                                  juce::Colour((int8)0, (int8)255, (int8)0, 0.5f),
-                                  juce::Colour((int8)0, (int8)0, (int8)255, 0.5f),
-                                  juce::Colour((int8)75, (int8)0, (int8)130, 0.5f),
-                                  juce::Colour((int8)148, (int8)0, (int8)211, 0.5f) };
+const Colour rainbow[7] = { Colour((int8)255, (int8)0, (int8)0, 0.5f),
+                            Colour((int8)255, (int8)127, (int8)0, 0.5f),
+                            Colour((int8)255, (int8)255, (int8)0, 0.5f),
+                            Colour((int8)0, (int8)255, (int8)0, 0.5f),
+                            Colour((int8)0, (int8)0, (int8)255, 0.5f),
+                            Colour((int8)75, (int8)0, (int8)130, 0.5f),
+                            Colour((int8)148, (int8)0, (int8)211, 0.5f) };
 
 //==============================================================================
 class customLook : public juce::LookAndFeel_V4
 {
 public:
     //==========================================================================
-    customLook()
-    {
-        setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::white);
-    }
+    customLook();
 
-    void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, juce::Slider& s) override
-    {
-        // https://docs.juce.com/master/tutorial_look_and_feel_customisation.html
-        float radius = juce::jmin(width / 2, height / 2) - 1.0f;
-        float ctrX = x + (width * 0.5f);
-        float ctrY = y + (height * 0.5f);
-        float radX = ctrX - radius;
-        float radY = ctrY - radius;
-        float dia = radius * 2.0;
-        float angle = rotaryStartAngle + (sliderPos * (rotaryEndAngle - rotaryStartAngle));
-
-        // Fill
-        g.setColour(s.findColour(juce::Slider::ColourIds::thumbColourId));
-        g.fillEllipse(radX, radY, dia, dia);
-        // Outline
-        g.setColour(juce::Colours::white);
-        g.drawEllipse(radX, radY, dia, dia, 2.0f);
-        // Pointer line
-        juce::Path p;
-        float thick = 2.0f;
-        p.addRectangle(-thick * 0.5f, -radius, thick, radius);
-        p.applyTransform(juce::AffineTransform::rotation(angle).translated(ctrX, ctrY));
-        g.fillPath(p);
-    }
+    void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, juce::Slider& s) override;
 
     void drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
-        bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
-    {
-        juce::ignoreUnused(shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+        bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 
-        if (!button.isEnabled())
-            g.setOpacity(0.5f);
-
-        if (button.getToggleState())
-        {
-            g.setColour(button.findColour(juce::ToggleButton::ColourIds::tickColourId));
-            g.fillRect(0, 0, button.getWidth(), button.getHeight());
-        }
-        g.setColour(juce::Colours::white);
-        g.drawRect(0, 0, button.getWidth(), button.getHeight(), 1);
-    }
+    void drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPos, float minSliderPos, float maxSliderPos, const juce::Slider::SliderStyle style, juce::Slider& slider);
 };
 
 //==============================================================================
@@ -100,6 +55,8 @@ private:
     juce::AudioProcessorValueTreeState& valueTreeState;
 
     juce::ComboBox select;
+
+    juce::Slider time[num_delays];
 
     juce::ToggleButton sync[num_delays];
     std::unique_ptr<ButtonAttachment> syncAttach[num_delays];

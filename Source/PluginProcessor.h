@@ -1,11 +1,3 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include <JuceHeader.h>
@@ -18,7 +10,7 @@ static constexpr int num_delays = 8;
 class BasicDelayAudioProcessor : public juce::AudioProcessor
 {
 public:
-    //==============================================================================
+    //==========================================================================
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
     {
         juce::AudioProcessorValueTreeState::ParameterLayout layout;
@@ -66,7 +58,7 @@ public:
 
     ~BasicDelayAudioProcessor() override;
 
-    //==============================================================================
+    //==========================================================================
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
@@ -77,11 +69,11 @@ public:
     void writeDelay(const size_t& delayNum);
     void writeDelay(float time, float gain, float pan);
 
-    //==============================================================================
+    //==========================================================================
     juce::AudioProcessorEditor* createEditor() override;
     inline bool hasEditor() const override { return true; }
 
-    //==============================================================================
+    //==========================================================================
     const juce::String getName() const override;
 
     bool acceptsMidi() const override;
@@ -89,19 +81,33 @@ public:
     bool isMidiEffect() const override;
     double getTailLengthSeconds() const override;
 
-    //==============================================================================
+    //==========================================================================
     int getNumPrograms() override;
     int getCurrentProgram() override;
     void setCurrentProgram(int index) override;
     const juce::String getProgramName(int index) override;
     void changeProgramName(int index, const juce::String& newName) override;
 
-    //==============================================================================
+    //==========================================================================
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
 private:
-    //==============================================================================
+    //==========================================================================
+    juce::AudioBuffer<float>* mainBuffer;
+    int bufferSize{ 0 };
+
+    juce::AudioBuffer<float> delayBuffer;
+    int delayBufferSize{ 0 };
+
+    juce::AudioBuffer<float> wetBuffer;
+
+    int channel{ 0 };
+    int writePosition{ 0 };
+
+    const float delay_buffer_length = 5.0f;
+
+    //==========================================================================
     juce::AudioProcessorValueTreeState parameters;
 
     std::atomic<float>* delay [num_delays] = { nullptr };
@@ -113,22 +119,11 @@ private:
     std::atomic<float>* sync [num_delays] = { nullptr };
     
     std::atomic<float>* blend = nullptr;
-    //==============================================================================
-    const float delay_buffer_length = 5.0f;
-    //==============================================================================
-    juce::AudioBuffer<float>* mainBuffer;
-    int bufferSize{ 0 };
-
-    juce::AudioBuffer<float> delayBuffer;
-    int delayBufferSize{ 0 };
-
-    juce::AudioBuffer<float> wetBuffer;
-
-    int channel{ 0 };
-    int writePosition{ 0 };
-    //==============================================================================
+    juce::SmoothedValue<float> blendSmooth = { 0.0f };
+    
+    //==========================================================================
     juce::AudioPlayHead::CurrentPositionInfo pos;
 
-    //==============================================================================
+    //==========================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BasicDelayAudioProcessor)
 };
