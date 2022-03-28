@@ -49,6 +49,11 @@ void customLook::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
     g.drawRect(0, 0, button.getWidth(), button.getHeight(), 1);
 }
 
+int customLook::getSliderThumbRadius(juce::Slider& slider)
+{
+    return 2;
+}
+
 // Modified version of juce::LookAndFeel_V4::drawLinerSlider
 void customLook::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
     float sliderPos,
@@ -64,39 +69,16 @@ void customLook::drawLinearSlider(juce::Graphics& g, int x, int y, int width, in
     }
     else
     {
-        auto trackWidth = juce::jmin(6.0f, slider.isHorizontal() ? (float)height * 0.25f : (float)width * 0.25f);
-
         juce::Point<float> startPoint(slider.isHorizontal() ? (float)x : (float)x + (float)width * 0.5f,
             slider.isHorizontal() ? (float)y + (float)height * 0.5f : (float)(height + y));
-
         juce::Point<float> endPoint(slider.isHorizontal() ? (float)(width + x) : startPoint.x,
             slider.isHorizontal() ? startPoint.y : (float)y);
-
-        /*
-        juce::Path backgroundTrack;
-        backgroundTrack.startNewSubPath(startPoint);
-        backgroundTrack.lineTo(endPoint);
-        g.setColour(slider.findColour(juce::Slider::backgroundColourId));
-        g.strokePath(backgroundTrack, { trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded });
-
-        juce::Path valueTrack;
-        */
         juce::Point<float> minPoint, maxPoint, thumbPoint;
-        
-
         auto kx = slider.isHorizontal() ? sliderPos : ((float)x + (float)width * 0.5f);
         auto ky = slider.isHorizontal() ? ((float)y + (float)height * 0.5f) : sliderPos;
-
         minPoint = startPoint;
         maxPoint = { kx, ky };
-
-        auto thumbWidth = getSliderThumbRadius(slider);
-        /*
-        valueTrack.startNewSubPath(minPoint);
-        valueTrack.lineTo(maxPoint);
-        g.setColour(slider.findColour(juce::Slider::trackColourId));
-        g.strokePath(valueTrack, { trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded });
-        */
+        auto thumbWidth = getSliderThumbRadius(slider) * 2;
 
         g.setColour(slider.findColour(juce::Slider::thumbColourId));
         g.fillRect(juce::Rectangle<float>(static_cast<float> (thumbWidth), height).withCentre(maxPoint));
@@ -110,7 +92,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
 {
     setLookAndFeel(&look);
 
-    setSize (800, 420 + (50 * num_delays));
+    setSize (800, 600);
 
     for (int i = 0; i < num_delays; ++i)
     {
@@ -120,7 +102,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         select.addItem(numStr, i + 1);
 
         time[i].setSliderStyle(juce::Slider::LinearHorizontal);
-        time[i].setColour(juce::Slider::ColourIds::thumbColourId, colour.withAlpha(1.0f));
+        time[i].setColour(juce::Slider::ColourIds::thumbColourId, colour);
         time[i].setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
         time[i].setLookAndFeel(&look);
         addAndMakeVisible(time[i]);
@@ -162,8 +144,10 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         panAttach[i].reset(new SliderAttachment(valueTreeState, "pan" + numStr, pan[i]));
     }
 
+    select.setScrollWheelEnabled(true);
     // https://docs.juce.com/master/tutorial_combo_box.html
     select.onChange = [this] { selectChanged(); };
+    select.setSelectedId(1);
     selectChanged();
     addAndMakeVisible(&select);
 
@@ -188,6 +172,8 @@ void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
 
     // Set current drawing color
     g.setColour (juce::Colours::white);
+
+    g.fillRect(juce::Rectangle<int>(100, 200, 600, 80));
 
     g.setFont (32.0f);
     g.drawFittedText("Sequenced Delay", 0, 100, getWidth(), 40, juce::Justification::centred, 1);
