@@ -23,9 +23,10 @@ void customLook::drawRotarySlider(juce::Graphics& g, int x, int y, int width, in
     g.setColour(s.findColour(juce::Slider::ColourIds::thumbColourId));
     g.fillEllipse(radX, radY, dia, dia);
     // Outline
-    g.setColour(juce::Colours::white);
-    g.drawEllipse(radX, radY, dia, dia, 2.0f);
+    g.setColour(juce::Colours::white.withAlpha(0.5f));
+    g.drawEllipse(radX, radY, dia, dia, 1.0f);
     // Pointer line
+    g.setColour(juce::Colours::white);
     juce::Path p;
     float thick = 2.0f;
     p.addRectangle(-thick * 0.5f, -radius, thick, radius);
@@ -40,21 +41,22 @@ void customLook::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
     if (!button.isEnabled())
         g.setOpacity(0.5f);
 
+    g.setColour(button.findColour(juce::ToggleButton::ColourIds::tickColourId).withAlpha(0.2f));
+    g.fillRect(0, 0, button.getWidth(), button.getHeight());
+
     if (button.getToggleState())
     {
-        g.setColour(button.findColour(juce::ToggleButton::ColourIds::tickColourId));
+        g.setColour(button.findColour(juce::ToggleButton::ColourIds::tickColourId).withAlpha(0.8f));
         g.fillRect(0, 0, button.getWidth(), button.getHeight());
     }
-    g.setColour(juce::Colours::white);
-    g.drawRect(0, 0, button.getWidth(), button.getHeight(), 1);
+
+    g.setColour(juce::Colours::white.withAlpha(0.5f));
+    g.drawRect(0, 0, button.getWidth(), button.getHeight());
 }
 
-int customLook::getSliderThumbRadius(juce::Slider& slider)
-{
-    return 2;
-}
+int customLook::getSliderThumbRadius(juce::Slider& slider) { return 2; }
 
-// Modified version of juce::LookAndFeel_V4::drawLinerSlider
+// Modified version of juce::LookAndFeel_V4::drawLinearSlider
 void customLook::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
     float sliderPos,
     float minSliderPos,
@@ -63,9 +65,14 @@ void customLook::drawLinearSlider(juce::Graphics& g, int x, int y, int width, in
 {
     if (slider.isBar())
     {
-        g.setColour(slider.findColour(juce::Slider::trackColourId));
-        g.fillRect(slider.isHorizontal() ? juce::Rectangle<float>(static_cast<float> (x), (float)y + 0.5f, sliderPos - (float)x, (float)height - 1.0f)
-            : juce::Rectangle<float>((float)x + 0.5f, sliderPos, (float)width - 1.0f, (float)y + ((float)height - sliderPos)));
+        // juce_LookAndFeel_V2.cpp line 1708 reduces the bounds of the bar by 1 to account for the border
+        sliderPos *= slider.isHorizontal() ? ((float)width + 2) / (float)width
+            : ((float)height + 2) / (float)height;
+        g.setColour(slider.findColour(juce::Slider::trackColourId).withAlpha(0.80f));
+        g.fillRect(slider.isHorizontal() ? juce::Rectangle<float>(x - 1, y - 1, sliderPos - (float)x, height + 2)
+            : juce::Rectangle<float>(x - 1, sliderPos, width + 2, y + (height - sliderPos)));
+        g.setColour(slider.findColour(juce::Slider::trackColourId).withAlpha(0.20f));
+        g.fillRect(juce::Rectangle<float>(x - 1, y - 1, width + 2, height + 2));
     }
     else
     {
@@ -85,9 +92,32 @@ void customLook::drawLinearSlider(juce::Graphics& g, int x, int y, int width, in
     }
 }
 
+// Modified version of juce::LookAndFeel_V4::drawLinearSlider
+void customLook::drawComboBox(juce::Graphics& g, int width, int height,
+    bool isButtonDown, int buttonX, int buttonY, int buttonW, int buttonH,
+    juce::ComboBox& box)
+{
+    juce::Rectangle<int> boxBounds(0, 0, width, height);
+
+    g.setColour(box.findColour(juce::ComboBox::backgroundColourId));
+    g.fillRect(boxBounds.toFloat());
+
+    g.setColour(box.findColour(juce::ComboBox::outlineColourId));
+    g.drawRect(boxBounds.toFloat(), 1.0f);
+
+    juce::Rectangle<int> arrowZone(width - 30, 0, 20, height);
+    juce::Path path;
+    path.startNewSubPath((float)arrowZone.getX() + 3.0f, (float)arrowZone.getCentreY() - 2.0f);
+    path.lineTo((float)arrowZone.getCentreX(), (float)arrowZone.getCentreY() + 3.0f);
+    path.lineTo((float)arrowZone.getRight() - 3.0f, (float)arrowZone.getCentreY() - 2.0f);
+
+    g.setColour(box.findColour(juce::ComboBox::arrowColourId).withAlpha((box.isEnabled() ? 0.9f : 0.2f)));
+    g.strokePath(path, juce::PathStrokeType(2.0f));
+}
+
 //==============================================================================
-BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
-(BasicDelayAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
+SequencedDelayEditor::SequencedDelayEditor
+(SequencedDelay& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor(&p), valueTreeState(vts)
 {
     setLookAndFeel(&look);
@@ -116,6 +146,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         delay[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
         delay[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         delay[i].setTextValueSuffix(" ms");
+        delay[i].setColour(juce::Slider::ColourIds::textBoxOutlineColourId, juce::Colours::white.withAlpha(0.5f));
         delay[i].setLookAndFeel(&look);
         addAndMakeVisible(&delay[i]);
         delayAttach[i].reset(new SliderAttachment(valueTreeState, "delay" + numStr, delay[i]));
@@ -124,6 +155,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         sixt[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
         sixt[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         sixt[i].setTextValueSuffix("/16");
+        sixt[i].setColour(juce::Slider::ColourIds::textBoxOutlineColourId, juce::Colours::white.withAlpha(0.5f));
         sixt[i].setLookAndFeel(&look);
         addAndMakeVisible(&sixt[i]);
         sixtAttach[i].reset(new SliderAttachment(valueTreeState, "sixt" + numStr, sixt[i]));
@@ -132,6 +164,7 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         gain[i].setColour(juce::Slider::ColourIds::trackColourId, colour);
         gain[i].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 200, 30);
         gain[i].setTextValueSuffix("%");
+        gain[i].setColour(juce::Slider::ColourIds::textBoxOutlineColourId, juce::Colours::white.withAlpha(0.5f));
         gain[i].setLookAndFeel(&look);
         addAndMakeVisible(&gain[i]);
         feedbackAttach[i].reset(new SliderAttachment(valueTreeState, "gain" + numStr, gain[i]));
@@ -144,6 +177,8 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
         panAttach[i].reset(new SliderAttachment(valueTreeState, "pan" + numStr, pan[i]));
     }
 
+    select.setColour(juce::ComboBox::ColourIds::backgroundColourId, juce::Colours::black.withAlpha(0.5f));
+    select.setColour(juce::ComboBox::ColourIds::outlineColourId, juce::Colours::white.withAlpha(0.5f));
     select.setScrollWheelEnabled(true);
     // https://docs.juce.com/master/tutorial_combo_box.html
     select.onChange = [this] { selectChanged(); };
@@ -153,22 +188,23 @@ BasicDelayAudioProcessorEditor::BasicDelayAudioProcessorEditor
 
     blend.setSliderStyle(juce::Slider::Rotary);
     blend.setColour(juce::Slider::ColourIds::thumbColourId, juce::Colours::black.withAlpha(0.5f));
-    blend.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 30);
+    blend.setColour(juce::Slider::ColourIds::textBoxOutlineColourId, juce::Colours::white.withAlpha(0.0f));
+    blend.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 30);
     blend.setTextValueSuffix("%");
     blendAttach.reset(new SliderAttachment(valueTreeState, "blend", blend));
     addAndMakeVisible(blend);
 }
 
-BasicDelayAudioProcessorEditor::~BasicDelayAudioProcessorEditor()
+SequencedDelayEditor::~SequencedDelayEditor()
 {
     setLookAndFeel(nullptr);
 }
 
 //==============================================================================
-void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
+void SequencedDelayEditor::paint (juce::Graphics& g)
 {
     // Fill whole window
-    g.fillAll (juce::Colour(0xff1a1a1a));
+    g.fillAll (juce::Colour(0xff202020));
 
     // Set current drawing color
     g.setColour (juce::Colours::white);
@@ -177,7 +213,7 @@ void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (32.0f);
     g.drawFittedText("Sequenced Delay", 0, 100, getWidth(), 40, juce::Justification::centred, 1);
-    g.drawFittedText("Gabe Rook - 20220324", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
+    g.drawFittedText("Gabe Rook - 20220328", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
 
     g.setFont(12.0f);
     const int a = 300;
@@ -187,7 +223,7 @@ void BasicDelayAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawFittedText("Pan", 660, a, 40, 20, juce::Justification::centred, 1);
 }
 
-void BasicDelayAudioProcessorEditor::resized()
+void SequencedDelayEditor::resized()
 {
     /// Called at initialization, and at resize if enabled
     // Set location of all components
@@ -202,11 +238,11 @@ void BasicDelayAudioProcessorEditor::resized()
         gain[i].setBounds(405, a, 245, 40);
         pan[i].setBounds(660, a, 40, 40);
     }
-    blend.setBounds(250, a + 50, 100, 100);
-    select.setBounds(400, a + 50, 200, 40);
+    blend.setBounds(350, a + 100, 100, 100);
+    select.setBounds(350, a + 50, 100, 40);
 }
 
-void BasicDelayAudioProcessorEditor::syncChanged()
+void SequencedDelayEditor::syncChanged()
 {
     for (size_t i = 0; i < num_delays; ++i)
     {
@@ -219,7 +255,7 @@ void BasicDelayAudioProcessorEditor::syncChanged()
     }
 }
 
-void BasicDelayAudioProcessorEditor::selectChanged()
+void SequencedDelayEditor::selectChanged()
 {
     size_t t = select.getSelectedId() - 1;
     bool isSelected;

@@ -7,7 +7,7 @@ const float pi = 2 * acos(0.0);
 static constexpr int num_delays = 16;
 
 //==============================================================================
-class BasicDelayAudioProcessor : public juce::AudioProcessor
+class SequencedDelay : public juce::AudioProcessor
 {
 public:
     //==========================================================================
@@ -19,7 +19,7 @@ public:
         {
             auto numStr = std::to_string(i);
             layout.add(std::make_unique<juce::AudioParameterFloat>("delay" + numStr,
-                "Delay " + numStr + " Time", 0.0f, 2000.0f, 250.0f));
+                "Delay " + numStr + " Time", 0.0f, 4000.0f, 250.0f));
             layout.add(std::make_unique<juce::AudioParameterFloat>("gain" + numStr,
                 "Delay " + numStr + " Gain", 0.0f, 100.0f, 0.0f));
             layout.add(std::make_unique<juce::AudioParameterFloat>("pan" + numStr,
@@ -38,7 +38,7 @@ public:
 
     // https://docs.juce.com/master/tutorial_audio_bus_layouts.html
     // https://docs.juce.com/master/tutorial_audio_processor_value_tree_state.html
-    BasicDelayAudioProcessor() :
+    SequencedDelay() :
         AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
             .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
         parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
@@ -56,7 +56,7 @@ public:
         blend = parameters.getRawParameterValue("blend");
     }
 
-    ~BasicDelayAudioProcessor() override;
+    ~SequencedDelay() override;
 
     //==========================================================================
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -125,5 +125,5 @@ private:
     juce::AudioPlayHead::CurrentPositionInfo pos;
 
     //==========================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BasicDelayAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SequencedDelay)
 };

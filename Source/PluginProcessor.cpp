@@ -2,17 +2,17 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-BasicDelayAudioProcessor::~BasicDelayAudioProcessor()
+SequencedDelay::~SequencedDelay()
 {
 }
 
 //==============================================================================
-const juce::String BasicDelayAudioProcessor::getName() const
+const juce::String SequencedDelay::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool BasicDelayAudioProcessor::acceptsMidi() const
+bool SequencedDelay::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -21,7 +21,7 @@ bool BasicDelayAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool BasicDelayAudioProcessor::producesMidi() const
+bool SequencedDelay::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -30,7 +30,7 @@ bool BasicDelayAudioProcessor::producesMidi() const
    #endif
 }
 
-bool BasicDelayAudioProcessor::isMidiEffect() const
+bool SequencedDelay::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -39,36 +39,36 @@ bool BasicDelayAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double BasicDelayAudioProcessor::getTailLengthSeconds() const
+double SequencedDelay::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int BasicDelayAudioProcessor::getNumPrograms()
+int SequencedDelay::getNumPrograms()
 {
     return 1;
 }
 
-int BasicDelayAudioProcessor::getCurrentProgram()
+int SequencedDelay::getCurrentProgram()
 {
     return 0;
 }
 
-void BasicDelayAudioProcessor::setCurrentProgram (int index)
+void SequencedDelay::setCurrentProgram (int index)
 {
 }
 
-const juce::String BasicDelayAudioProcessor::getProgramName (int index)
+const juce::String SequencedDelay::getProgramName (int index)
 {
     return {};
 }
 
-void BasicDelayAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void SequencedDelay::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void BasicDelayAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+void SequencedDelay::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     for (int i = 0; i < num_delays; ++i)
     {
@@ -84,13 +84,13 @@ void BasicDelayAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
     wetBuffer.clear();
 }
 
-void BasicDelayAudioProcessor::releaseResources()
+void SequencedDelay::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
-bool BasicDelayAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool SequencedDelay::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
@@ -103,7 +103,7 @@ bool BasicDelayAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 }
 
 //==============================================================================
-void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void SequencedDelay::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     auto inputChannels  = getTotalNumInputChannels();
     auto outputChannels = getTotalNumOutputChannels();
@@ -156,7 +156,7 @@ void BasicDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 }
 
 // Loads the delayBuffer with new incoming information
-void BasicDelayAudioProcessor::loadDelayBuffer()
+void SequencedDelay::loadDelayBuffer()
 {
     auto* channelData = mainBuffer->getWritePointer(channel);
     
@@ -178,7 +178,7 @@ void BasicDelayAudioProcessor::loadDelayBuffer()
     }
 }
 
-void BasicDelayAudioProcessor::writeDelay(const size_t& delayNum)
+void SequencedDelay::writeDelay(const size_t& delayNum)
 {
     // Update gainSmooth and delaySamples
     gainSmooth[delayNum].setTargetValue(*gain[delayNum]);
@@ -198,7 +198,7 @@ void BasicDelayAudioProcessor::writeDelay(const size_t& delayNum)
 // @param time - Delay time in samples
 // @param gain - Delay gain
 // @param pan - Delay pan
-void BasicDelayAudioProcessor::writeDelay(float time, float gain, float pan)
+void SequencedDelay::writeDelay(float time, float gain, float pan)
 {
     int readPosition = writePosition - time;
 
@@ -235,13 +235,13 @@ void BasicDelayAudioProcessor::writeDelay(float time, float gain, float pan)
 }
 
 //==============================================================================
-juce::AudioProcessorEditor* BasicDelayAudioProcessor::createEditor()
+juce::AudioProcessorEditor* SequencedDelay::createEditor()
 {
-    return new BasicDelayAudioProcessorEditor (*this, parameters);
+    return new SequencedDelayEditor (*this, parameters);
 }
 
 // Saves state information to a juce::MemoryBlock object for storage
-void BasicDelayAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void SequencedDelay::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = parameters.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
@@ -249,7 +249,7 @@ void BasicDelayAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 }
 
 // Restores parameters from information saved using getStateInformation
-void BasicDelayAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void SequencedDelay::setStateInformation (const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
 
@@ -262,5 +262,5 @@ void BasicDelayAudioProcessor::setStateInformation (const void* data, int sizeIn
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new BasicDelayAudioProcessor();
+    return new SequencedDelay();
 }
