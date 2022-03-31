@@ -11,7 +11,7 @@ customLook::customLook()
 void customLook::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, juce::Slider& s)
 {
     // https://docs.juce.com/master/tutorial_look_and_feel_customisation.html
-    float radius = juce::jmin(width / 2, height / 2) - 1.0f;
+    float radius = juce::jmin(width / 2.0f, height / 2.0f) - 1.0f;
     float ctrX = x + (width * 0.5f);
     float ctrY = y + (height * 0.5f);
     float radX = ctrX - radius;
@@ -244,7 +244,7 @@ void SequencedDelayEditor::resized()
 
 void SequencedDelayEditor::syncChanged()
 {
-    for (size_t i = 0; i < num_delays; ++i)
+    for (int i = 0; i < num_delays; ++i)
     {
         if (i == select.getSelectedId() - 1)
         {
@@ -257,10 +257,10 @@ void SequencedDelayEditor::syncChanged()
 
 void SequencedDelayEditor::selectChanged()
 {
-    size_t t = select.getSelectedId() - 1;
+    int t = select.getSelectedId() - 1;
     bool isSelected;
 
-    for (size_t i = 0; i < num_delays; ++i)
+    for (int i = 0; i < num_delays; ++i)
     {
         isSelected = t == i;
 
