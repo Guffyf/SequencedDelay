@@ -72,10 +72,11 @@ void SequencedDelay::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     for (int i = 0; i < num_delays; ++i)
     {
-        delaySamples[i].reset(sampleRate, 0.00002f);
-        gainSmooth[i].reset(sampleRate, 0.00002f);
+        delaySamples[i].reset(sampleRate, 0.0002f);
+        gainL[i].reset(sampleRate, 0.02f);
+        gainR[i].reset(sampleRate, 0.02f);
     }
-    blendSmooth.reset(sampleRate, 0.00002f);
+    blendSmooth.reset(sampleRate, 0.02f);
     
     auto delayBufferSize = sampleRate * delay_buffer_length;
     delayBuffer.setSize(getTotalNumOutputChannels(), static_cast<int>(delayBufferSize));
@@ -120,23 +121,20 @@ void SequencedDelay::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     delayBufferSize = delayBuffer.getNumSamples();
 
     // For mono inputs, copy left channel to right channel
-    for (channel = inputChannels; channel < outputChannels; ++channel)
+    for (int channel = inputChannels; channel < outputChannels; ++channel)
     {
         buffer.clear(channel, 0, buffer.getNumSamples());
-        mainBuffer->copyFromWithRamp(channel, 0, mainBuffer->getReadPointer(channel % inputChannels, 0), bufferSize, 1.0f, 1.0f);
+        mainBuffer->copyFrom(channel, 0, mainBuffer->getReadPointer(channel % inputChannels, 0), bufferSize);
     }
 
     wetBuffer.setSize(getTotalNumOutputChannels(), bufferSize);
 
     // Loop handling writing of delays
-    for (channel = 0; channel < outputChannels; ++channel)
-    {
-        loadDelayBuffer();
+    loadDelayBuffer();
 
-        for (size_t i = 0; i < num_delays; ++i)
-        {
-            writeDelay(i);
-        }
+    for (size_t i = 0; i < num_delays; ++i)
+    {
+        writeDelay(i);
     }
 
     writePosition += bufferSize;
@@ -144,12 +142,20 @@ void SequencedDelay::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
 
     // Dry/wet mixing
     blendSmooth.setTargetValue(*blend);
-    float wetGain = blendSmooth.getCurrentValue() / 100.0f;
+    float wetGain;
 
-    mainBuffer->applyGain(1.0f - wetGain);
-    for (channel = 0; channel < outputChannels; ++channel)
+    // https://www.youtube.com/watch?v=HpGJH_gKRCU
+    for (int sample = 0; sample < mainBuffer->getNumSamples(); ++sample)
     {
-        mainBuffer->addFromWithRamp(channel, 0, wetBuffer.getReadPointer(channel, 0), bufferSize, wetGain, wetGain);
+        wetGain = blendSmooth.getNextValue() / 100.0f;
+
+        for (int channel = 0; channel < outputChannels; ++channel)
+        {
+            auto* dryData = mainBuffer->getWritePointer(channel, sample);
+            auto* wetData = wetBuffer.getReadPointer(channel, sample);
+            *dryData *= 1.0f - wetGain;
+            *dryData += *wetData * wetGain;
+        }
     }
 
     wetBuffer.clear();
@@ -158,30 +164,33 @@ void SequencedDelay::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
 // Loads the delayBuffer with new incoming information
 void SequencedDelay::loadDelayBuffer()
 {
-    auto* channelData = mainBuffer->getWritePointer(channel);
+    auto outputChannels = getTotalNumOutputChannels();
     
-    // Check if main buffer copies to delay buffer without going out of bounds
-    if (delayBufferSize > bufferSize + writePosition)
+    for (int channel = 0; channel < outputChannels; ++channel)
     {
-        delayBuffer.copyFrom(channel, writePosition, channelData, bufferSize);
-    }
-    else
-    {
-        int numSamplesToEnd = delayBufferSize - writePosition;
-        int numSamplesAtStart = bufferSize - numSamplesToEnd;
+        auto* channelData = mainBuffer->getReadPointer(channel);
 
-        // Copy from write to end
-        delayBuffer.copyFrom(channel, writePosition, channelData, numSamplesToEnd);
-        // Copy remaining samples from start onward
-        delayBuffer.copyFrom(channel, 0, channelData + numSamplesToEnd, numSamplesAtStart);
-        
+        // Check if main buffer copies to delay buffer without going out of bounds
+        if (delayBufferSize > bufferSize + writePosition)
+        {
+            delayBuffer.copyFrom(channel, writePosition, channelData, bufferSize);
+        }
+        else
+        {
+            int numSamplesToEnd = delayBufferSize - writePosition;
+            int numSamplesAtStart = bufferSize - numSamplesToEnd;
+
+            // Copy from write to end
+            delayBuffer.copyFrom(channel, writePosition, channelData, numSamplesToEnd);
+            // Copy remaining samples from start onward
+            delayBuffer.copyFrom(channel, 0, channelData + numSamplesToEnd, numSamplesAtStart);
+        }
     }
 }
 
 void SequencedDelay::writeDelay(const size_t& delayNum)
 {
-    // Update gainSmooth and delaySamples
-    gainSmooth[delayNum].setTargetValue(*gain[delayNum]);
+    // Update delaySamples
     if (!(*sync[delayNum]))
     {
         delaySamples[delayNum].setTargetValue(getSampleRate() * (*delay[delayNum] / 1000.0f));
@@ -191,46 +200,38 @@ void SequencedDelay::writeDelay(const size_t& delayNum)
         delaySamples[delayNum].setTargetValue(getSampleRate() * (60.0f / pos.bpm) * (*sixt[delayNum] / 4.0f));
     }
 
-    writeDelay(delaySamples[delayNum].getCurrentValue(), (gainSmooth[delayNum].getCurrentValue() / 100.0f), (*pan[delayNum] / 100.0f));
+    // Update gains
+    auto thisPan = *pan[delayNum] / 100.0f;
+    auto thisGain = *gain[delayNum] / 100.0f;
+    // https://forum.cockos.com/showthread.php?t=49809
+    gainL[delayNum].setTargetValue(sin(0.5f * pi * (1.0f - thisPan)) * thisGain);
+    gainR[delayNum].setTargetValue(sin(0.5f * pi * thisPan) * thisGain);
+
+    writeDelay(delaySamples[delayNum], gainL[delayNum], gainR[delayNum]);
 }
 
 // Reads from delayBuffer and copies to wetBuffer
 // @param time - Delay time in samples
 // @param gain - Delay gain
 // @param pan - Delay pan
-void SequencedDelay::writeDelay(float time, float gain, float pan)
+void SequencedDelay::writeDelay(juce::SmoothedValue<int>& time, juce::SmoothedValue<float>& gainL, juce::SmoothedValue<float>& gainR)
 {
-    int readPosition = writePosition - time;
+    auto outputChannels = getTotalNumOutputChannels();
 
-    if (readPosition < 0)
+    for (int sample = 0; sample < mainBuffer->getNumSamples(); ++sample)
     {
-        readPosition += delayBufferSize;
-    }
+        int pos = (writePosition + sample - time.getNextValue()
+            + delayBufferSize) % delayBufferSize;
 
-    // Panning
-    // https://forum.cockos.com/showthread.php?t=49809
-    float channelGain;
-    if (channel == 0)
-    {
-        channelGain = sin(0.5f * pi * (1.0f - pan)) * gain;
-    }
-    else
-    {
-        channelGain = sin(0.5f * pi * pan) * gain;
-    }
-    
+        for (int channel = 0; channel < outputChannels; ++channel)
+        {
+            auto* wetData = wetBuffer.getWritePointer(channel, sample);
 
-    if (readPosition + bufferSize < delayBufferSize)
-    {
-        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, channelGain, channelGain);
-    }
-    else
-    {
-        int numSamplesToEnd = delayBufferSize - readPosition;
-        int numSamplesAtStart = bufferSize - numSamplesToEnd;
-
-        wetBuffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, channelGain, channelGain);
-        wetBuffer.addFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel), numSamplesAtStart, channelGain, channelGain);
+            auto* bufferData = delayBuffer.getReadPointer(channel,
+                pos);
+            *wetData += *bufferData * (channel == 0 ?
+                gainL.getNextValue() : gainR.getNextValue());
+        }
     }
 }
 

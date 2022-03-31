@@ -4,7 +4,7 @@
 
 //==============================================================================
 const float pi = 2 * acos(0.0);
-static constexpr int num_delays = 16;
+static constexpr int num_delays = 1;
 
 //==============================================================================
 class SequencedDelay : public juce::AudioProcessor
@@ -67,7 +67,7 @@ public:
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void loadDelayBuffer();
     void writeDelay(const size_t& delayNum);
-    void writeDelay(float time, float gain, float pan);
+    void writeDelay(juce::SmoothedValue<int>& time, juce::SmoothedValue<float>& gainL, juce::SmoothedValue<float>& gainR);
 
     //==========================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -102,7 +102,6 @@ private:
 
     juce::AudioBuffer<float> wetBuffer;
 
-    int channel{ 0 };
     int writePosition{ 0 };
 
     const float delay_buffer_length = 5.0f;
@@ -110,13 +109,16 @@ private:
     //==========================================================================
     juce::AudioProcessorValueTreeState parameters;
 
+    std::atomic<float>* sync[num_delays] = { nullptr };
+
     std::atomic<float>* delay [num_delays] = { nullptr };
     std::atomic<float>* sixt [num_delays] = { nullptr };
     juce::SmoothedValue<int> delaySamples [num_delays] = { 0 };
+
     std::atomic<float>* gain [num_delays] = { nullptr };
-    juce::SmoothedValue<float> gainSmooth [num_delays] = { 0.0f };
     std::atomic<float>* pan [num_delays] = { nullptr };
-    std::atomic<float>* sync [num_delays] = { nullptr };
+    juce::SmoothedValue<float> gainL[num_delays] = { 0.0f };
+    juce::SmoothedValue<float> gainR[num_delays] = { 0.0f };
     
     std::atomic<float>* blend = nullptr;
     juce::SmoothedValue<float> blendSmooth = { 0.0f };
