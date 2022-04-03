@@ -4,7 +4,7 @@
 
 //==============================================================================
 const float pi = 2 * acos(0.0);
-static constexpr int num_delays = 1;
+static constexpr int num_delays = 16;
 
 //==============================================================================
 class SequencedDelay : public juce::AudioProcessor
