@@ -1,94 +1,30 @@
+//============================================================================//
+//                                                                            //
+//      Sequenced Delay - Gabe Rook                                           //
+//                                                                            //
+//============================================================================//
+
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
 //==============================================================================
-SequencedDelay::~SequencedDelay()
-{
-}
-
-//==============================================================================
-const juce::String SequencedDelay::getName() const
-{
-    return JucePlugin_Name;
-}
-
-bool SequencedDelay::acceptsMidi() const
-{
-   #if JucePlugin_WantsMidiInput
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-bool SequencedDelay::producesMidi() const
-{
-   #if JucePlugin_ProducesMidiOutput
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-bool SequencedDelay::isMidiEffect() const
-{
-   #if JucePlugin_IsMidiEffect
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-double SequencedDelay::getTailLengthSeconds() const
-{
-    return 0.0;
-}
-
-int SequencedDelay::getNumPrograms()
-{
-    return 1;
-}
-
-int SequencedDelay::getCurrentProgram()
-{
-    return 0;
-}
-
-void SequencedDelay::setCurrentProgram (int index)
-{
-}
-
-const juce::String SequencedDelay::getProgramName (int index)
-{
-    return {};
-}
-
-void SequencedDelay::changeProgramName (int index, const juce::String& newName)
-{
-}
-
-//==============================================================================
 void SequencedDelay::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
+    // Setup juce::SmoothedValue objects
     for (int i = 0; i < num_delays; ++i)
     {
-        delaySamples[i].reset(sampleRate, 0.0002f);
+        delaySamples[i].reset(sampleRate, 0.2f);
         gainL[i].reset(sampleRate, 0.02f);
         gainR[i].reset(sampleRate, 0.02f);
     }
     blendSmooth.reset(sampleRate, 0.02f);
     
+    // Setup delayBuffer and wetBuffer
     auto delayBufferSize = sampleRate * delay_buffer_length;
     delayBuffer.setSize(getTotalNumOutputChannels(), static_cast<int>(delayBufferSize));
 
     delayBuffer.clear();
     wetBuffer.clear();
-}
-
-void SequencedDelay::releaseResources()
-{
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
 }
 
 bool SequencedDelay::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -114,25 +50,23 @@ void SequencedDelay::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
         playhead->getCurrentPosition(pos);
     }
 
-    // Use global variable mainBuffer to provide access to buffer in helper methods
+    // Use class variable mainBuffer to provide access to buffer in helper methods
     mainBuffer = &buffer;
-
-    bufferSize = mainBuffer->getNumSamples();
-    delayBufferSize = delayBuffer.getNumSamples();
 
     // For mono inputs, copy left channel to right channel
     for (int channel = inputChannels; channel < outputChannels; ++channel)
     {
-        buffer.clear(channel, 0, buffer.getNumSamples());
+        mainBuffer->clear(channel, 0, mainBuffer->getNumSamples());
         mainBuffer->copyFrom(channel, 0, mainBuffer->getReadPointer(channel % inputChannels, 0), bufferSize);
     }
 
+    bufferSize = mainBuffer->getNumSamples();
+    delayBufferSize = delayBuffer.getNumSamples();
     wetBuffer.setSize(getTotalNumOutputChannels(), bufferSize);
 
-    // Loop handling writing of delays
     loadDelayBuffer();
 
-    for (size_t i = 0; i < num_delays; ++i)
+    for (int i = 0; i < num_delays; ++i)
     {
         writeDelay(i);
     }
@@ -188,7 +122,8 @@ void SequencedDelay::loadDelayBuffer()
     }
 }
 
-void SequencedDelay::writeDelay(const size_t& delayNum)
+// Calculates targets for smoothed values and calls other writeDelay
+void SequencedDelay::writeDelay(const int& delayNum)
 {
     // Update delaySamples
     if (!(*sync[delayNum]))
@@ -210,16 +145,14 @@ void SequencedDelay::writeDelay(const size_t& delayNum)
     writeDelay(delaySamples[delayNum], gainL[delayNum], gainR[delayNum]);
 }
 
-// Reads from delayBuffer and copies to wetBuffer
-// @param time - Delay time in samples
-// @param gain - Delay gain
-// @param pan - Delay pan
+// Writes delay to wetBuffer using SmoothedValue parameters
 void SequencedDelay::writeDelay(juce::SmoothedValue<int>& time, juce::SmoothedValue<float>& gainL, juce::SmoothedValue<float>& gainR)
 {
     auto outputChannels = getTotalNumOutputChannels();
 
     for (int sample = 0; sample < mainBuffer->getNumSamples(); ++sample)
     {
+        // Find sample location in delayBuffer
         int pos = (writePosition + sample - time.getNextValue()
             + delayBufferSize) % delayBufferSize;
 
@@ -260,7 +193,68 @@ void SequencedDelay::setStateInformation (const void* data, int sizeInBytes)
 }
 
 //==============================================================================
-// This creates new instances of the plugin..
+const juce::String SequencedDelay::getName() const
+{
+    return JucePlugin_Name;
+}
+
+bool SequencedDelay::acceptsMidi() const
+{
+#if JucePlugin_WantsMidiInput
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool SequencedDelay::producesMidi() const
+{
+#if JucePlugin_ProducesMidiOutput
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool SequencedDelay::isMidiEffect() const
+{
+#if JucePlugin_IsMidiEffect
+    return true;
+#else
+    return false;
+#endif
+}
+
+double SequencedDelay::getTailLengthSeconds() const
+{
+    return 0.0;
+}
+
+int SequencedDelay::getNumPrograms()
+{
+    return 1;
+}
+
+int SequencedDelay::getCurrentProgram()
+{
+    return 0;
+}
+
+void SequencedDelay::setCurrentProgram(int index)
+{
+}
+
+const juce::String SequencedDelay::getProgramName(int index)
+{
+    return {};
+}
+
+void SequencedDelay::changeProgramName(int index, const juce::String& newName)
+{
+}
+
+//==============================================================================
+// This creates new instances of the plugin
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new SequencedDelay();

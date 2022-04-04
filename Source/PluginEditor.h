@@ -1,45 +1,58 @@
+//============================================================================//
+//                                                                            //
+//      Sequenced Delay - Gabe Rook                                           //
+//                                                                            //
+//============================================================================//
+
 #pragma once
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h" 
 
-//==============================================================================
+using juce::Colour;
+using juce::Graphics;
+using juce::ToggleButton;
+using juce::Slider;
+using juce::ComboBox;
+
 typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
-typedef juce::Colour Colour;
-typedef juce::uint8 int8;
-
-const Colour rainbow[7] = { Colour((int8)255, (int8)0, (int8)0),
-                            Colour((int8)255, (int8)127, (int8)0),
-                            Colour((int8)255, (int8)255, (int8)0),
-                            Colour((int8)0, (int8)255, (int8)0),
-                            Colour((int8)0, (int8)0, (int8)255),
-                            Colour((int8)75, (int8)0, (int8)130),
-                            Colour((int8)148, (int8)0, (int8)211) };
 
 //==============================================================================
+const Colour lineColour = juce::Colours::white.withAlpha(0.75f);
+const Colour darkColour = juce::Colours::black.withAlpha(0.5f);
+
+//==============================================================================
+// LookAndFeel that overrides JUCE's default
 class customLook : public juce::LookAndFeel_V4
 {
 public:
     //==========================================================================
     customLook();
 
-    void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
-        float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle,
-        juce::Slider& s) override;
-
-    void drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
+    void drawToggleButton(Graphics& g, ToggleButton& button,
         bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 
-    int getSliderThumbRadius(juce::Slider& slider) override;
+    inline int getSliderThumbRadius(Slider& slider) override { return 2; };
 
-    void drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
+    void drawLinearSlider(Graphics& g, int x, int y, int width, int height,
         float sliderPos, float minSliderPos, float maxSliderPos, 
-        const juce::Slider::SliderStyle style, juce::Slider& slider);
+        const Slider::SliderStyle style, Slider& slider);
 
-    void drawComboBox(juce::Graphics& g, int width, int height, 
+    void drawRotarySlider(Graphics& g, int x, int y, int width, int height,
+        float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle,
+        Slider& s) override;
+
+    void drawComboBox(Graphics& g, int width, int height, 
         bool isButtonDown, int buttonX, int buttonY, int buttonW, int buttonH,
-        juce::ComboBox& box) override;
+        ComboBox& box) override;
+};
+
+//==============================================================================
+class mainSlider : public Slider
+{
+public:
+    mainSlider();
 };
 
 //==============================================================================
@@ -65,23 +78,21 @@ private:
     //==========================================================================
     juce::AudioProcessorValueTreeState& valueTreeState;
 
-    juce::ComboBox select;
-
-    juce::Slider time[num_delays];
-
-    juce::ToggleButton sync[num_delays];
+    ToggleButton sync[num_delays];
     std::unique_ptr<ButtonAttachment> syncAttach[num_delays];
-    juce::Slider delay[num_delays];
+    mainSlider delay[num_delays];
     std::unique_ptr<SliderAttachment> delayAttach[num_delays];
-    juce::Slider sixt[num_delays];
+    mainSlider sixt[num_delays];
     std::unique_ptr<SliderAttachment> sixtAttach[num_delays];
-    juce::Slider gain[num_delays];
+    mainSlider gain[num_delays];
     std::unique_ptr<SliderAttachment> feedbackAttach[num_delays];
-    juce::Slider pan[num_delays];
+    Slider pan[num_delays];
     std::unique_ptr<SliderAttachment> panAttach[num_delays];
 
-    juce::Slider blend;
+    Slider blend;
     std::unique_ptr<SliderAttachment> blendAttach;
+
+    ComboBox select;
 
     //==========================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SequencedDelayEditor)
