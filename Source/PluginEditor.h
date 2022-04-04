@@ -1,21 +1,26 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "PluginProcessor.h" 
+#include "PluginProcessor.h"
+
+using juce::Colour;
+using juce::uint8;
+using juce::Graphics;
+using juce::Slider;
+using juce::ComboBox;
+using juce::ToggleButton;
 
 //==============================================================================
 typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
-typedef juce::Colour Colour;
-typedef juce::uint8 int8;
 
-const Colour rainbow[7] = { Colour((int8)255, (int8)0, (int8)0),
-                            Colour((int8)255, (int8)127, (int8)0),
-                            Colour((int8)255, (int8)255, (int8)0),
-                            Colour((int8)0, (int8)255, (int8)0),
-                            Colour((int8)0, (int8)0, (int8)255),
-                            Colour((int8)75, (int8)0, (int8)130),
-                            Colour((int8)148, (int8)0, (int8)211) };
+const Colour rainbow[7] = { Colour((uint8)255, (uint8)0, (uint8)0),
+                            Colour((uint8)255, (uint8)127, (uint8)0),
+                            Colour((uint8)255, (uint8)255, (uint8)0),
+                            Colour((uint8)0, (uint8)255, (uint8)0),
+                            Colour((uint8)0, (uint8)0, (uint8)255),
+                            Colour((uint8)75, (uint8)0, (uint8)130),
+                            Colour((uint8)148, (uint8)0, (uint8)211) };
 
 //==============================================================================
 class customLook : public juce::LookAndFeel_V4
@@ -24,22 +29,35 @@ public:
     //==========================================================================
     customLook();
 
-    void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
+    void drawRotarySlider(Graphics& g, int x, int y, int width, int height,
         float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle,
         juce::Slider& s) override;
 
-    void drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
+    void drawToggleButton(Graphics& g, ToggleButton& button,
         bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 
-    int getSliderThumbRadius(juce::Slider& slider) override;
+    int getSliderThumbRadius(Slider& slider) override;
 
-    void drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
+    void drawLinearSlider(Graphics& g, int x, int y, int width, int height,
         float sliderPos, float minSliderPos, float maxSliderPos, 
-        const juce::Slider::SliderStyle style, juce::Slider& slider);
+        const juce::Slider::SliderStyle style, Slider& slider);
 
-    void drawComboBox(juce::Graphics& g, int width, int height, 
+    void drawComboBox(Graphics& g, int width, int height, 
         bool isButtonDown, int buttonX, int buttonY, int buttonW, int buttonH,
-        juce::ComboBox& box) override;
+        ComboBox& box) override;
+};
+
+//==============================================================================
+class timeDisplay : public Slider
+{
+public:
+    //==========================================================================
+    timeDisplay();
+
+    inline void mouseMove(const juce::MouseEvent&) override {};
+
+private:
+    //==========================================================================
 };
 
 //==============================================================================
@@ -51,7 +69,7 @@ public:
     ~SequencedDelayEditor() override;
 
     //==========================================================================
-    void paint(juce::Graphics&) override;
+    void paint(Graphics& g) override;
     void resized() override;
 
     //==========================================================================
@@ -67,7 +85,8 @@ private:
 
     juce::ComboBox select;
 
-    juce::Slider time[num_delays];
+    juce::AudioVisualiserComponent* viz;
+    timeDisplay time[num_delays];
 
     juce::ToggleButton sync[num_delays];
     std::unique_ptr<ButtonAttachment> syncAttach[num_delays];

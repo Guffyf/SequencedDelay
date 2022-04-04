@@ -5,10 +5,10 @@
 //==============================================================================
 customLook::customLook()
 {
-    setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::white);
+    setColour(Slider::textBoxOutlineColourId, juce::Colours::white);
 }
 
-void customLook::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, juce::Slider& s)
+void customLook::drawRotarySlider(Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, Slider& s)
 {
     // https://docs.juce.com/master/tutorial_look_and_feel_customisation.html
     float radius = juce::jmin(width / 2.0f, height / 2.0f) - 1.0f;
@@ -20,7 +20,7 @@ void customLook::drawRotarySlider(juce::Graphics& g, int x, int y, int width, in
     float angle = rotaryStartAngle + (sliderPos * (rotaryEndAngle - rotaryStartAngle));
 
     // Fill
-    g.setColour(s.findColour(juce::Slider::ColourIds::thumbColourId));
+    g.setColour(s.findColour(Slider::ColourIds::thumbColourId));
     g.fillEllipse(radX, radY, dia, dia);
     // Outline
     g.setColour(juce::Colours::white.withAlpha(0.5f));
@@ -54,10 +54,10 @@ void customLook::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
     g.drawRect(0, 0, button.getWidth(), button.getHeight());
 }
 
-int customLook::getSliderThumbRadius(juce::Slider& slider) { return 2; }
+int customLook::getSliderThumbRadius(Slider& slider) { return 2; }
 
 // Modified version of juce::LookAndFeel_V4::drawLinearSlider
-void customLook::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
+void customLook::drawLinearSlider(Graphics& g, int x, int y, int width, int height,
     float sliderPos,
     float minSliderPos,
     float maxSliderPos,
@@ -116,14 +116,27 @@ void customLook::drawComboBox(juce::Graphics& g, int width, int height,
 }
 
 //==============================================================================
+timeDisplay::timeDisplay()
+{
+    setSliderStyle(juce::Slider::LinearHorizontal);
+    setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
+    setRange(0.0, 4000.0);
+}
+
+//==============================================================================
 SequencedDelayEditor::SequencedDelayEditor
 (SequencedDelay& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor(&p), valueTreeState(vts)
 {
-    setLookAndFeel(&look);
+    viz = &p.viz;
 
+    setLookAndFeel(&look);
     setSize (800, 600);
 
+    viz->setColours(Colour(0.0f, 0.0f, 0.0f), Colour(1.0f, 1.0f, 1.0f));
+    viz->setRepaintRate(60);
+    addAndMakeVisible(viz);
+    
     for (int i = 0; i < num_delays; ++i)
     {
         auto numStr = std::to_string(i + 1);
@@ -131,11 +144,9 @@ SequencedDelayEditor::SequencedDelayEditor
 
         select.addItem(numStr, i + 1);
 
-        time[i].setSliderStyle(juce::Slider::LinearHorizontal);
         time[i].setColour(juce::Slider::ColourIds::thumbColourId, colour);
-        time[i].setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
         time[i].setLookAndFeel(&look);
-        addAndMakeVisible(time[i]);
+        addAndMakeVisible(&time[i]);
 
         sync[i].setColour(juce::ToggleButton::ColourIds::tickColourId, colour);
         addAndMakeVisible(&sync[i]);
@@ -209,8 +220,6 @@ void SequencedDelayEditor::paint (juce::Graphics& g)
     // Set current drawing color
     g.setColour (juce::Colours::white);
 
-    g.fillRect(juce::Rectangle<int>(100, 200, 600, 80));
-
     g.setFont (32.0f);
     g.drawFittedText("Sequenced Delay", 0, 100, getWidth(), 40, juce::Justification::centred, 1);
     g.drawFittedText("Gabe Rook - 20220328", 0, 140, getWidth(), 40, juce::Justification::centred, 1);
@@ -227,9 +236,10 @@ void SequencedDelayEditor::resized()
 {
     /// Called at initialization, and at resize if enabled
     // Set location of all components
+    viz->setBounds(100, 200, 600, 80);
+
     const int a = 320;
-    int i;
-    for (i = 0; i < num_delays; ++i)
+    for (int i = 0; i < num_delays; ++i)
     {
         time[i].setBounds(100, 200, 600, 80);
         sync[i].setBounds(100, a, 40, 40);
@@ -271,3 +281,4 @@ void SequencedDelayEditor::selectChanged()
         pan[i].setVisible(isSelected);
     }
 }
+

@@ -2,11 +2,6 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-SequencedDelay::~SequencedDelay()
-{
-}
-
-//==============================================================================
 const juce::String SequencedDelay::getName() const
 {
     return JucePlugin_Name;
@@ -69,20 +64,27 @@ void SequencedDelay::changeProgramName (int index, const juce::String& newName)
 
 //==============================================================================
 void SequencedDelay::prepareToPlay(double sampleRate, int samplesPerBlock)
-{
+{    
+    // Prepare smoothed values
     for (int i = 0; i < num_delays; ++i)
     {
-        delaySamples[i].reset(sampleRate, 0.0002f);
+        delaySamples[i].reset(sampleRate, 0.2f);
         gainL[i].reset(sampleRate, 0.02f);
         gainR[i].reset(sampleRate, 0.02f);
     }
     blendSmooth.reset(sampleRate, 0.02f);
     
+    // Set up delayBuffer and wetBuffer
     auto delayBufferSize = sampleRate * delay_buffer_length;
     delayBuffer.setSize(getTotalNumOutputChannels(), static_cast<int>(delayBufferSize));
-
     delayBuffer.clear();
+
     wetBuffer.clear();
+
+    // Set up audio visualizer
+    viz.setNumChannels(getTotalNumOutputChannels());
+    viz.setBufferSize(512);
+    viz.setSamplesPerBlock(256);
 }
 
 void SequencedDelay::releaseResources()
@@ -127,9 +129,10 @@ void SequencedDelay::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
         mainBuffer->copyFrom(channel, 0, mainBuffer->getReadPointer(channel % inputChannels, 0), bufferSize);
     }
 
+    viz.pushBuffer(*mainBuffer);
+
     wetBuffer.setSize(getTotalNumOutputChannels(), bufferSize);
 
-    // Loop handling writing of delays
     loadDelayBuffer();
 
     for (size_t i = 0; i < num_delays; ++i)
@@ -190,14 +193,17 @@ void SequencedDelay::loadDelayBuffer()
 
 void SequencedDelay::writeDelay(const size_t& delayNum)
 {
-    // Update delaySamples
+    // Update delayResult and delaySamples
     if (!(*sync[delayNum]))
     {
+        *delayResult[delayNum] = *delay[delayNum] * 1.0f;
         delaySamples[delayNum].setTargetValue(getSampleRate() * (*delay[delayNum] / 1000.0f));
     }
     else
     {
-        delaySamples[delayNum].setTargetValue(getSampleRate() * (60.0f / pos.bpm) * (*sixt[delayNum] / 4.0f));
+        auto a = (60.0f / pos.bpm) * (*sixt[delayNum] / 4.0f);
+        *delayResult[delayNum] = a * 1000.0f;
+        delaySamples[delayNum].setTargetValue(getSampleRate() * a);
     }
 
     // Update gains

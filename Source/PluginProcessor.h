@@ -3,6 +3,9 @@
 #include <JuceHeader.h>
 
 //==============================================================================
+typedef std::shared_ptr<std::atomic<float>> sharedFloat;
+
+//==============================================================================
 const float pi = 2 * acos(0.0);
 static constexpr int num_delays = 16;
 
@@ -41,10 +44,13 @@ public:
     SequencedDelay() :
         AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
             .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-        parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout())
+        parameters(*this, nullptr, juce::Identifier("Main"), createParameterLayout()),
+        viz(2)
     {
         for (int i = 0; i < num_delays; ++i)
         {
+            delayResult[i] = std::make_shared<std::atomic<float>>(0.0f);
+
             auto numStr = std::to_string(i + 1);
             delay[i] = parameters.getRawParameterValue("delay" + numStr);
             gain[i] = parameters.getRawParameterValue("gain" + numStr);
@@ -56,7 +62,7 @@ public:
         blend = parameters.getRawParameterValue("blend");
     }
 
-    ~SequencedDelay() override;
+    inline ~SequencedDelay() override {};
 
     //==========================================================================
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -92,6 +98,10 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
+    //==========================================================================
+    juce::AudioVisualiserComponent viz;
+    sharedFloat delayResult [num_delays];
+
 private:
     //==========================================================================
     juce::AudioBuffer<float>* mainBuffer;
@@ -109,7 +119,7 @@ private:
     //==========================================================================
     juce::AudioProcessorValueTreeState parameters;
 
-    std::atomic<float>* sync[num_delays] = { nullptr };
+    std::atomic<float>* sync [num_delays] = { nullptr };
 
     std::atomic<float>* delay [num_delays] = { nullptr };
     std::atomic<float>* sixt [num_delays] = { nullptr };
